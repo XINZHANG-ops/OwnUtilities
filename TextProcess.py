@@ -31,38 +31,7 @@ tqdm.pandas()
 ##########################################################################
 # Word Resources
 ##########################################################################
-some_other_words = ['cost', 'meet', 'bonfire', 'will', 'question', 'seek', 'auction', 'quote',
-                    'low', 'story', 'person', 'event', 'note', 'following', 'eight', 'benefit',
-                    'seven', 'time', 'invite', 'phase', 'ultra', 'two', 'term', 'party', 'part',
-                    'minute', 'proposition', 'free', 'zero', 'successful', 'via', 'award',
-                    'talking', 'rebid', 'accepted', 'third', 'submission', 'quality', 'total',
-                    'prequalify', 'four', 'five', 'pour', 'seeking', 'accordingly', 'establish',
-                    'http', 'current', 'thank', 'ten', 'site', 'proposal', 'day', 'broken',
-                    'optional', 'call', 'staff', 'ensure', 'plus', 'minimum', 'qualify', 'district',
-                    'within', 'bond', 'application', 'three', 'back', 'nine', 'six', 'bonfirehub',
-                    'price', 'en', 'must', 'master', 'interested', 'work', 'you', 'deliverable',
-                    'year', 'high', 'except', 'list', 'fast', 'may', 'la', 'proposals', 'bring',
-                    'rfpq', 'solution', 'rate', 'integrator', 'exist', 'invitation', 'select', 'dba',
-                    'acceptable', 'performance', 'one', 'outreach', 'purchase', 'end', 'department',
-                    'unopened', 'proponent', 'category', 'long', 'after', 'contractor', 'improvement',
-                    'ca', 'original', 'provision', 'thirty', 'hundred', 'option', 'please', 'surety',
-                    'solicitation', 'main', 'week', 'additional', 'condition', 'enable', 'new', 'development',
-                    'initiative', 'locate', 'county', 'arrive', 'without', 'ordered', 'used', 'necessary',
-                    'project', 'bidder', 'rfp', 'approach', 'possible', 'un', 'contract', 'supplier',
-                    'access', 'https', 'contact', 'majority', 'participate', 'efficient', 'requirement',
-                    'enter', 'primarily', 'buyer', 'include', 'request', 'issued', 'september', 'login',
-                    'june', 'de', 'agreement', 'submit', 'all', 'manner', 'rfi', 'shall', 'need', 'short',
-                    'non', 'along', 'discount', 'per', 'twenty', 'previously', 'which', 'qualified', 'fit',
-                    'unused', 'rfq', 'done', 'july', 'procurement', 'experience', 'well', 'vendor', 'west',
-                    'due', 'purpose', 'sale', 'best', 'sixty', 'similar', 'self', 'calling', 'bid', 'based',
-                    'com', 'complete', 'provide', 'date', 'use', 'upon', 'consider', 'area',
-                    'terms', 'extension', 'years', 'services', 'period', 'product', 'supplies', 'equipment',
-                    'supply', 'products', 'specific', 'existing', 'supply', 'pay', 'offers', 'offer',
-                    'described', 'asked', 'providing', 'bids', 'requirements', 'increase', 'improve',
-                    'contractors','contractor','identified','proposed','considering','intro','download',
-                    'details','located','requested','respond','jointly','required','allow','require',
-                    'allowing','different','large','small','addition', 'types','different','retain',
-                    'approximately','intention']
+some_other_words = ['your exclude words']
 
 Englishtext = set(w.lower() for w in W.words())
 
