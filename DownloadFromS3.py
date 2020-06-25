@@ -11,7 +11,7 @@ def hook(t):
     t.update(bytes_amount)
   return inner
 
-def S3_download(file_name,save_file_name,bucket='bonfire-data-team-share',show_progress=True):
+def S3_download(file_name,save_file_name,bucket,show_progress=True):
     if show_progress:
         s3 = boto3.resource('s3')
         s31 = boto3.client('s3')
@@ -25,7 +25,7 @@ def S3_download(file_name,save_file_name,bucket='bonfire-data-team-share',show_p
 
 
 
-def upload_file(file_name,save_file_name=None, bucket='bonfire-data-team-share',show_progress=True):
+def upload_file(bucket,file_name,save_file_name=None,show_progress=True):
     """Upload a file to an S3 bucket
 
     :param file_name: File to upload
