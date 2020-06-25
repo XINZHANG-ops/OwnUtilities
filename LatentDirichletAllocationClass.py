@@ -1,5 +1,5 @@
 import numpy as np
-from xin_util.TextProcess import text_tokens
+from .TextProcess import text_tokens
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import LatentDirichletAllocation as LDA
 

@@ -1,8 +1,8 @@
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
-from xin_util.TextProcess import text_tokens
-from xin_util.Scores import single_label_f_score
+from .TextProcess import text_tokens
+from .Scores import single_label_f_score
 from tqdm import tqdm
 tqdm.pandas()
 import nltk as nltk

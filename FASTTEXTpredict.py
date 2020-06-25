@@ -4,8 +4,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import confusion_matrix
-from xin_util.TextProcess import text_tokens
-from xin_util.Scores import single_label_f_score
+from .TextProcess import text_tokens
+from .Scores import single_label_f_score
 from sklearn.model_selection import train_test_split
 import fasttext
 

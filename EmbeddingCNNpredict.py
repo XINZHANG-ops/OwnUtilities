@@ -11,8 +11,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import confusion_matrix
-from xin_util.TextProcess import text_tokens
-from xin_util.Scores import single_label_f_score
+from .TextProcess import text_tokens
+from .Scores import single_label_f_score
 from gensim.models import FastText
 from gensim.models import Word2Vec
 from keras.layers import Embedding, Conv1D, MaxPooling1D, GlobalMaxPooling1D
