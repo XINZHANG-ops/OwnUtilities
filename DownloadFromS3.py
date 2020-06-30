@@ -49,7 +49,6 @@ def upload_file(file_name,save_file_name=None, bucket='bonfire-data-team-share',
     # If S3 object_name was not specified, use file_name
     if save_file_name is None:
         save_file_name = file_name
-
     # Upload the file
     s3_client = boto3.client('s3')
     try:
@@ -119,6 +118,7 @@ def S3_upload_folder(foler_name,remote_folder,bucket,ignore_files=['.DS_Store'],
     """
     if list(os.walk(foler_name)):
         actuall_folder_name=splitall(foler_name)[-1]
+        pre_path=os.path.join(*splitall(foler_name)[:-1])
         for path, subdirs, files in os.walk(foler_name):
             for name in files:
                 if name in ignore_files:
@@ -132,7 +132,7 @@ def S3_upload_folder(foler_name,remote_folder,bucket,ignore_files=['.DS_Store'],
                 folders.reverse()
                 file_path=os.path.join(*folders)
                 aws_path=os.path.join(remote_folder,file_path)
-                upload_file(file_path,save_file_name=aws_path, bucket=bucket,show_progress=show_progress)
+                upload_file(os.path.join(pre_path,file_path),save_file_name=aws_path, bucket=bucket,show_progress=show_progress)
     else:
         file_name=splitall(foler_name)[-1]
         aws_path = os.path.join(remote_folder, file_name)
