@@ -19,7 +19,7 @@ pip install -i https://test.pypi.org/simple/ xin-util
 from xin_util.PrettyPrintDict import pretty_print_dict  
 from xin_util.CreateDIYdictFromDataFrame import CreateDIYdictFromDataFrame  
 from xin_util.ReadWritePicklefile import read_pickle, save_pickle  
-from xin_util.DownloadFromS3 import S3_download, upload_file  
+from xin_util.DownloadFromS3 import S3_download_folder, S3_upload_folder  
 from xin_util.StackBarPlot import plot_stacked_bar  
 from xin_util.ZipAndUnzip import zip, unzip  
   
