@@ -3,7 +3,7 @@ import logging
 from tqdm import tqdm
 import os
 from botocore.exceptions import ClientError
-
+from boto.s3.connection import S3Connection
 def splitall(path):
     allparts = []
     while 1:
