@@ -1,4 +1,5 @@
 
+  
 
 # Xin-util
 
@@ -22,6 +23,7 @@ from xin_util.ReadWritePicklefile import read_pickle, save_pickle
 from xin_util.DownloadFromS3 import S3_download_folder, S3_upload_folder  
 from xin_util.StackBarPlot import plot_stacked_bar  
 from xin_util.ZipAndUnzip import zip, unzip  
+from xin_util.AccessSQL import getDBData, create
   
 # TimeSeries  
 from xin_util.TimeSeriesFeatureEngineer import TimeSeries, create_average_feature  
@@ -55,6 +57,7 @@ from xin_util.LatentDirichletAllocationClass import MyLDA
   * [NBpredict](#NBpredict)
   * [ONEHOTNNpredict](#ONEHOTNNpredict)
   * [LatentDirichletAllocationClass](#LatentDirichletAllocationClass)
+  * [AccessSQL](#AccessSQL)
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
