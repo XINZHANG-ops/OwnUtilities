@@ -6,21 +6,23 @@ from scipy.interpolate import interp1d
 from scipy.signal import savgol_filter
 
 abs_path = os.path.dirname(os.path.abspath(__file__))
+
+
 class training_pred_class:
     def __init__(self):
         self.data_points = 200
         self.smooth_window_size = 21
         self.smooth_polynomial_order = 3
-        with open(os.path.join(abs_path , 'data','trainpredict.json')) as f:
+        with open(os.path.join(abs_path, 'data', 'trainpredict.json')) as f:
             self.data = json.load(f)
-        self.look_up_table = dict((int(k),v) for k,v in self.data['look_up_table'].items())
+        self.look_up_table = dict((int(k), v) for k, v in self.data['look_up_table'].items())
 
     @staticmethod
     def get_features_from_keras_model(keras_model_obj):
-        layer_names = [layer['class_name'] for layer in keras_model_obj.get_config()['layers']]
-        return layer_names
+        layers = [i for i in keras_model_obj.get_config()['layers'] if i['class_name'] == 'Dense']
+        return layers
 
-    def predict(self, model, batch_size, optimizer, GPU_TYPE = 'P100'):
+    def predict(self, model, batch_size, optimizer, GPU_TYPE='P100'):
         data_points = self.data_points
         smooth_window_size = self.smooth_window_size
         smooth_polynomial_order = self.smooth_polynomial_order
@@ -52,6 +54,7 @@ class training_pred_class:
 
         pred = sum_layers_batch / multiplier
         return pred
-    
+
+
 prediction_model = training_pred_class()
 
