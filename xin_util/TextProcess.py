@@ -33,7 +33,7 @@ tqdm.pandas()
 ##########################################################################
 some_other_words = ['your exclude words']
 
-Englishtext = set(w.lower() for w in W.words())
+Englishtext = set(W.words())
 
 my_stopwords={'able'}
 stop_words = set([word for word in stopwords.words('english')])
@@ -212,6 +212,7 @@ def remove_adjacent(seq):
 
 
 def text_tokens(text,lower_bound_percentage=0,higher_bound_percentage=1,minimal_word_length=0,
+                lower_case = False,
                    remove_punctuations=False,
                    remove_non_letter_characters=False,
                    lemmatize_the_words=False,
@@ -229,10 +230,12 @@ def text_tokens(text,lower_bound_percentage=0,higher_bound_percentage=1,minimal_
                    tokens_form=True,
                    stop_words=stop_words,
                    some_other_words=some_other_words):
-    text = text.lower()
-    text = re.sub(r'\n', " ", text)
+    if lower_case:
+        text = text.lower()
+        Englishtext = set(w.lower() for w in W.words())
+    text = re.sub(r'\n', "", text)
     if url_filter:
-        url_pattern = re.compile(r'((http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?)')
+        url_pattern = re.compile(r'((http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?[a-zA-Z0-9]+([\-\.]{1}[a-zA-Z0-9]+)*\.[a-zA-Z]{2,5}(:[0-9]{1,5})?(\/.*)?)')
         text=re.sub(url_pattern, " ", text)
     if parentheses_filter:
         parentheses_pattern = re.compile(r'(\([^)]+\))')

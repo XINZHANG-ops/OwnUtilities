@@ -39,6 +39,11 @@ from xin_util.FASTTEXTpredict import fasttext_classify
 from xin_util.NBpredict import Naive_Bayes_classify  
 from xin_util.ONEHOTNNpredict import Onehot_Network_classify
 from xin_util.LatentDirichletAllocationClass import MyLDA
+
+# Model training time prediction
+from model_trainingtime_prediction.layer_data_gen import get_train_data
+from model_trainingtime_prediction.random_network_gen import gen_nn
+from model_trainingtime_prediction.train_time_predict import prediction_model
 ```
 ## Documentation
   * [PrettyPrintDict](#PrettyPrintDict)

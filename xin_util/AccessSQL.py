@@ -1,4 +1,5 @@
 import os
+import time
 from sshtunnel import SSHTunnelForwarder
 import paramiko
 import pymysql
@@ -14,7 +15,8 @@ dbParam = {
     'sql_port' : 0000,
     'ssh_host' : '00.00.000.000',
     'ssh_user' : 'deploy',
-    'ssh_port' : 22
+    'ssh_port' : 22,
+    'local_port': 33306
 }
 
 getDBData(dbParam, your_query)
@@ -23,13 +25,14 @@ getDBData(dbParam, your_query)
 """
 
 
-def getDBData(dbParam, query):
+def getDBData(dbParam, query, connection_buffer = 1, connect_timeout = 1000, use_own_local_port =False):
     '''
     Parameters
     ----------
     db: which db to retrieve data from
     query: consist of the MYSQL query to run on the dbs
-
+    connection_buffer: time(sec) give for connecting to MySQL, if query before the
+    connection is made, Timeout error will show
     Returns
     -------
     df: dataframe that contains the query results
@@ -47,11 +50,18 @@ def getDBData(dbParam, query):
             ssh_username=dbParam['ssh_user'],
             ssh_pkey=my_pubkey,
             remote_bind_address=(dbParam['sql_hostname'], dbParam['sql_port'])) as tunnel:
-        conn = pymysql.connect(host='127.0.0.1', user=dbParam['sql_username'],
-                               passwd=dbParam['sql_password'], db=dbParam['sql_main_database'],
-                               port=tunnel.local_bind_port)
-
-        df = pd.read_sql_query(query, conn)
+        if use_own_local_port:
+            conn = pymysql.connect(host='127.0.0.1', user=dbParam['sql_username'],
+                                   passwd=dbParam['sql_password'], db=dbParam['sql_main_database'],
+                                   port=dbParam['local_port'], connect_timeout = connect_timeout)
+            time.sleep(connection_buffer)
+            df = pd.read_sql_query(query, conn)
+        else:
+            conn = pymysql.connect(host='127.0.0.1', user=dbParam['sql_username'],
+                                   passwd=dbParam['sql_password'], db=dbParam['sql_main_database'],
+                                   port=tunnel.local_bind_port, connect_timeout=connect_timeout)
+            time.sleep(connection_buffer)
+            df = pd.read_sql_query(query, conn)
 
         conn.close()
     return df
