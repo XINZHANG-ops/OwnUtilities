@@ -44,5 +44,9 @@ class gen_nn:
         if self.loss == 'random':
             self.loss = np.random.choice(self.losses)
 
-        return  gen_nn.build_dense_model(self.hidden_layer_sizes, self.activations, self.optimizer, self.loss)
+        return {'model': gen_nn.build_dense_model(self.hidden_layer_sizes, self.activations, self.optimizer, self.loss),
+                'layer_sizes': hidden_layer_sizes,
+                'activations':activations,
+                'optimizer':optimizer,
+                'loss':loss}
 
