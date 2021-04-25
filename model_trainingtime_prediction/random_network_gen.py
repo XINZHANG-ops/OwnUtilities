@@ -49,8 +49,8 @@ class gen_nn:
             loss =  self.loss_pick
 
         return {'model': gen_nn.build_dense_model(hidden_layer_sizes, activations, optimizer, loss),
-                'layer_sizes': hidden_layer_sizes,
-                'activations': activations,
+                'layer_sizes': list(hidden_layer_sizes),
+                'activations': list(activations),
                 'optimizer': optimizer,
                 'loss': loss}
 
