@@ -16,9 +16,9 @@ class gen_nn:
         self.hidden_layers_num_upper = hidden_layers_num_upper
         self.hidden_layer_size_lower = hidden_layer_size_lower
         self.hidden_layer_size_upper = hidden_layer_size_upper
-        self.activation = activation
-        self.optimizer = optimizer
-        self.loss = loss
+        self.activation_pick = activation
+        self.optimizer_pick = optimizer
+        self.loss_pick = loss
         self.activation_fcts = ['relu', "sigmoid", "softmax", "softplus", "softsign", "tanh", "selu", "elu", "exponential"]
         self.optimizers = ["SGD", "RMSprop", "Adam", "Adadelta", "Adagrad", "Adamax", "Nadam", "Ftrl"]
         self.losses =  ["mae", "mape", "mse", "msle", "poisson", "categorical_crossentropy"]
@@ -32,21 +32,25 @@ class gen_nn:
         return model_dense
 
     def generate_model(self):
-        self.hidden_layers_num = np.random.randint(self.hidden_layers_num_lower, self.hidden_layers_num_upper)
-        self.hidden_layer_sizes = np.random.randint(self.hidden_layer_size_lower, self.hidden_layer_size_upper, self.hidden_layers_num)
+        hidden_layers_num = np.random.randint(self.hidden_layers_num_lower, self.hidden_layers_num_upper)
+        hidden_layer_sizes = np.random.randint(self.hidden_layer_size_lower, self.hidden_layer_size_upper, hidden_layers_num)
 
-        if self.activation == 'random':
-            self.activations = np.random.choice(self.activation_fcts,self.hidden_layers_num)
+        if self.activation_pick == 'random':
+            activations = np.random.choice(self.activation_fcts,hidden_layers_num)
         else:
-            self.activations = np.random.choice([self.activation], self.hidden_layers_num)
-        if self.optimizer == 'random':
-            self.optimizer = np.random.choice(self.optimizers)
-        if self.loss == 'random':
-            self.loss = np.random.choice(self.losses)
+            activations = np.random.choice([self.activation_pick],hidden_layers_num)
+        if self.optimizer_pick == 'random':
+            optimizer = np.random.choice(self.optimizers)
+        else:
+            optimizer = self.optimizer_pick
+        if self.loss_pick == 'random':
+            loss = np.random.choice(self.losses)
+        else:
+            loss =  self.loss_pick
 
-        return {'model': gen_nn.build_dense_model(self.hidden_layer_sizes, self.activations, self.optimizer, self.loss),
-                'layer_sizes': self.hidden_layer_sizes,
-                'activations': self.activations,
-                'optimizer': self.optimizer,
-                'loss': self.loss}
+        return {'model': gen_nn.build_dense_model(hidden_layer_sizes, activations, optimizer, loss),
+                'layer_sizes': hidden_layer_sizes,
+                'activations': activations,
+                'optimizer': optimizer,
+                'loss': loss}
 
