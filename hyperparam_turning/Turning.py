@@ -448,5 +448,5 @@ def demo_random_search():
 
     plt.figure(figsize=(15, 8))
     plt.scatter(range(len([j for i, j, k in turning.history])), [j for i, j, k in turning.history])
-    plt.title('scores from all grids')
+    plt.title('scores from all random params')
     plt.show()
