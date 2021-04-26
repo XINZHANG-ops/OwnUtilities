@@ -13,6 +13,7 @@ class call_back_bayesian:
         self.accuracies = []
         self.configs = []
         self.all = []
+        self.start_time = time.time()
 
     def time_stamp_call(self, res):
         self.time_stamps.append(time.time())
