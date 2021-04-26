@@ -334,7 +334,7 @@ def demo_bayesian():
 
     X, y = load_digits(n_class=10, return_X_y=True)
 
-    turning = Bayesian(
+    tuning = Bayesian(
         model_callable=model,
         param_space=param_space,
         x_train=X,
@@ -346,7 +346,7 @@ def demo_bayesian():
         y_test=None
     )
 
-    result, bayesian_callback = turning.train(n_calls=10, verbose=True)
+    result, bayesian_callback = tuning.train(n_calls=10, verbose=True)
 
     print('#################################')
     print('accuracy history:')
@@ -354,7 +354,7 @@ def demo_bayesian():
     print('config history:')
     print(bayesian_callback.configs)
     print(f'Best result happened at {bayesian_callback.configs.index(result.x)+1}th trial')
-    print('Best parameters are: ', dict(zip(turning.param_names, result.x)))
+    print('Best parameters are: ', dict(zip(tuning.param_names, result.x)))
     print('Best score:', min(bayesian_callback.accuracies))
 
     plt.figure(figsize=(15, 8))
@@ -380,7 +380,7 @@ def demo_grid_search():
 
     X, y = load_digits(n_class=10, return_X_y=True)
 
-    turning = GridSearch(
+    tuning = GridSearch(
         model_callable=model,
         param_space=param_space,
         x_train=X,
@@ -391,18 +391,18 @@ def demo_grid_search():
         y_test=None
     )
 
-    result = turning.train(verbose=True)
+    result = tuning.train(verbose=True)
 
     print('#################################')
     print('accuracy history:')
-    print([j for i, j, k in turning.history])
+    print([j for i, j, k in tuning.history])
     print('config history:')
-    print([i for i, j, k in turning.history])
+    print([i for i, j, k in tuning.history])
     print('Best parameters are: ', result[0][0])
     print('Best score:', result[0][1])
 
     plt.figure(figsize=(15, 8))
-    plt.scatter(range(len([j for i, j, k in turning.history])), [j for i, j, k in turning.history])
+    plt.scatter(range(len([j for i, j, k in tuning.history])), [j for i, j, k in tuning.history])
     plt.title('scores from all grids')
     plt.show()
 
@@ -425,7 +425,7 @@ def demo_random_search():
 
     X, y = load_digits(n_class=10, return_X_y=True)
 
-    turning = RandomSearch(
+    tuning = RandomSearch(
         model_callable=model,
         param_space=param_space,
         x_train=X,
@@ -436,17 +436,17 @@ def demo_random_search():
         y_test=None
     )
 
-    result = turning.train(n_iter=10, random_state=0, verbose=True)
+    result = tuning.train(n_iter=10, random_state=0, verbose=True)
 
     print('#################################')
     print('accuracy history:')
-    print([j for i, j, k in turning.history])
+    print([j for i, j, k in tuning.history])
     print('config history:')
-    print([i for i, j, k in turning.history])
+    print([i for i, j, k in tuning.history])
     print('Best parameters are: ', result[0][0])
     print('Best score:', result[0][1])
 
     plt.figure(figsize=(15, 8))
-    plt.scatter(range(len([j for i, j, k in turning.history])), [j for i, j, k in turning.history])
+    plt.scatter(range(len([j for i, j, k in tuning.history])), [j for i, j, k in tuning.history])
     plt.title('scores from all random params')
     plt.show()
