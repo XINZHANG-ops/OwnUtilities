@@ -1,5 +1,8 @@
 from PIL import Image, ImageDraw, ImageFont
 from math import ceil
+# pip install yapf, to install yapf
+# to run format, go to root folder
+# yapf -ir ./ --style ./yapf.conf
 # specify how large the canvas needs to be
 # size in pixels.
 # horizontal size is fixed at 430,
