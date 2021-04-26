@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='xin_util',
-    version='1.0.06',
+    version='1.0.07',
     author="Xin Zhang",
     author_email="1528371521zx@gmail.com",
     description="Xin's self created helper functions",
@@ -16,7 +16,7 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    packages=['xin_util', 'model_trainingtime_prediction', 'hyperparam_turning'],
+    packages=['xin_util', 'model_trainingtime_prediction', 'hyperparam_tuning'],
     license='MIT',
     # install_requires=['boto3',
     #                     'fasttext',
