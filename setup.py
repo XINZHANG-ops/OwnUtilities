@@ -3,20 +3,20 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-     name='xin_util',
-     version='1.0.05',
-     author="Xin Zhang",
-     author_email="1528371521zx@gmail.com",
-     description="Xin's self created helper functions",
-     long_description=long_description,
+    name='xin_util',
+    version='1.0.06',
+    author="Xin Zhang",
+    author_email="1528371521zx@gmail.com",
+    description="Xin's self created helper functions",
+    long_description=long_description,
     long_description_content_type="text/markdown",
-     url="https://github.com/XINZHANG-ops/OwnUtilities",
-     classifiers=[
-         "Programming Language :: Python :: 3",
-         "License :: OSI Approved :: MIT License",
-         "Operating System :: OS Independent",
-     ],
-    packages=['xin_util','model_trainingtime_prediction'],
+    url="https://github.com/XINZHANG-ops/OwnUtilities",
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+    ],
+    packages=['xin_util', 'model_trainingtime_prediction', 'hyperparam_turning'],
     license='MIT',
     # install_requires=['boto3',
     #                     'fasttext',
@@ -33,6 +33,6 @@ setuptools.setup(
     #                     'tqdm',
     #                   'keras'],
     include_package_data=True,
-    py_modules=['utils','timeseries','textclassification'],
+    py_modules=['utils', 'timeseries', 'textclassification'],
     package_data={'': ['data/*.json']}
- )
+)

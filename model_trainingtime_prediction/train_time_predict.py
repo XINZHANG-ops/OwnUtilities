@@ -38,8 +38,9 @@ class training_pred_class:
         xdata = np.array(layer_numbers).astype(np.float)
         ydata = np.array([np.median(i) for i in all_layer_batch])
 
-        y_smooth = savgol_filter(ydata, smooth_window_size,
-                                 smooth_polynomial_order)  # window size 51, polynomial order 3
+        y_smooth = savgol_filter(
+            ydata, smooth_window_size, smooth_polynomial_order
+        )  # window size 51, polynomial order 3
         f_interp1d = interp1d(xdata, y_smooth, kind='cubic')
 
         features = training_pred_class.get_features_from_keras_model(model)
@@ -57,4 +58,3 @@ class training_pred_class:
 
 
 prediction_model = training_pred_class()
-

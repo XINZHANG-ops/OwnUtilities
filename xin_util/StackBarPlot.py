@@ -1,9 +1,18 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def plot_stacked_bar(data, series_labels, category_labels=None,
-                     show_values=False, value_format="{}", y_label=None,
-                     colors=None, grid=True, reverse=False):
+
+def plot_stacked_bar(
+    data,
+    series_labels,
+    category_labels=None,
+    show_values=False,
+    value_format="{}",
+    y_label=None,
+    colors=None,
+    grid=True,
+    reverse=False
+):
     """Plots a stacked bar chart with the data and labels provided.
 
     Keyword arguments:
@@ -38,8 +47,9 @@ def plot_stacked_bar(data, series_labels, category_labels=None,
         category_labels = reversed(category_labels)
 
     for i, row_data in enumerate(data):
-        axes.append(plt.bar(ind, row_data, bottom=cum_size,
-                            label=series_labels[i], color=colors[i]))
+        axes.append(
+            plt.bar(ind, row_data, bottom=cum_size, label=series_labels[i], color=colors[i])
+        )
         cum_size += row_data
 
     if category_labels:
@@ -57,14 +67,16 @@ def plot_stacked_bar(data, series_labels, category_labels=None,
         for axis in axes:
             for bar in axis:
                 w, h = bar.get_width(), bar.get_height()
-                plt.text(bar.get_x() + w/2, bar.get_y() + h/2,
-                         value_format.format(h), ha="center",
-                         va="center")
-
+                plt.text(
+                    bar.get_x() + w / 2,
+                    bar.get_y() + h / 2,
+                    value_format.format(h),
+                    ha="center",
+                    va="center"
+                )
 
 
 # Example
-
 '''
 plt.figure(figsize=(6, 4))
 

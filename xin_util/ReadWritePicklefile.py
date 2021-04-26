@@ -1,4 +1,4 @@
-from pickle import load,dump
+from pickle import load, dump
 import numpy as np
 
 
@@ -9,16 +9,18 @@ def read_pickle(filename):
     input.close()
     return Whatever
 
-def save_pickle(stuff,savename):
+
+def save_pickle(stuff, savename):
     output = open(savename, 'wb')
-    dump(stuff, output,-1)
+    dump(stuff, output, -1)
     output.close()
 
-def saveList(myList,savename):
-    np.save(savename,myList)
+
+def saveList(myList, savename):
+    np.save(savename, myList)
 
 
-def loadList(filename,path):
+def loadList(filename, path):
     # the filename should mention the extension 'npy'
-    tempNumpyArray=np.load(path+filename)
+    tempNumpyArray = np.load(path + filename)
     return tempNumpyArray.tolist()

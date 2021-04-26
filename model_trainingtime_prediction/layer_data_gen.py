@@ -5,6 +5,7 @@ import keras
 from keras.models import Sequential
 from keras.layers import Dense
 
+
 class TimeHistory(keras.callbacks.Callback):
     def on_train_begin(self, logs={}):
         self.train_start_time = time.time()
@@ -37,29 +38,37 @@ class TimeHistory(keras.callbacks.Callback):
         self.batch_times_detail = np.array(self.batch_times_detail) - self.train_start_time
         self.train_end_time = np.array(self.train_end_time) - self.train_start_time
 
-def get_train_data(epochs = 10,
-                   truncate_from = 2,
-                   batch_size = 32,
-                   act = 'relu',
-                   opt = 'SGD',
-                   verbose = False,
-                   dim_in = 100,
-                   dim_out = 100,
-                   loss='categorical_crossentropy'):
+
+def get_train_data(
+    epochs=10,
+    truncate_from=2,
+    batch_size=32,
+    act='relu',
+    opt='SGD',
+    verbose=False,
+    dim_in=100,
+    dim_out=100,
+    loss='categorical_crossentropy'
+):
 
     # build model
     model = Sequential()
-    model.add(Dense(dim_out, input_dim=dim_in, activation=act ,kernel_initializer=tf.ones_initializer()))
+    model.add(
+        Dense(dim_out, input_dim=dim_in, activation=act, kernel_initializer=tf.ones_initializer())
+    )
     model.compile(loss=loss, optimizer=opt, metrics=['accuracy'])
 
     data_shape = model.get_config()['layers'][0]['config']['batch_input_shape'][1:]
     out_shape = model.get_config()['layers'][-1]['config']['units']
-    x = np.ones((batch_size ,*data_shape), dtype=np.float32)
-    y = np.ones((batch_size ,out_shape), dtype=np.float32)
+    x = np.ones((batch_size, *data_shape), dtype=np.float32)
+    y = np.ones((batch_size, out_shape), dtype=np.float32)
 
     time_callback = TimeHistory()
-    model.fit(x, y, epochs=epochs, batch_size=batch_size, callbacks=[time_callback] ,verbose=verbose)
-    times_batch = np.array(time_callback.batch_times)[truncate_from: ] *1000 # *1000 covert seconds to ms
-    times_epoch = np.array(time_callback.epoch_times)[truncate_from: ] *1000
+    model.fit(
+        x, y, epochs=epochs, batch_size=batch_size, callbacks=[time_callback], verbose=verbose
+    )
+    times_batch = np.array(time_callback.batch_times
+                           )[truncate_from:] * 1000  # *1000 covert seconds to ms
+    times_epoch = np.array(time_callback.epoch_times)[truncate_from:] * 1000
 
     return np.median(times_batch), np.median(times_epoch)

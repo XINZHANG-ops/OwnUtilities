@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 
-def single_label_included_score(y_pred,y_gold):
+
+def single_label_included_score(y_pred, y_gold):
     """
     this function will computer the score by including
     Example 1:
@@ -30,28 +31,29 @@ def single_label_included_score(y_pred,y_gold):
     label_wise_accuracy: a dictionary,where keys are labels, values are float score of the label
                         calculated by example 2
     """
-    assert len(y_pred)==len(y_gold), 'y_pred and y_gold need to have same length'
-    count=0
-    label_wise_score=nltk.defaultdict(lambda: nltk.defaultdict(int))
-    for index,pred in enumerate(y_pred):
-        gold=set(y_gold[index])
+    assert len(y_pred) == len(y_gold), 'y_pred and y_gold need to have same length'
+    count = 0
+    label_wise_score = nltk.defaultdict(lambda: nltk.defaultdict(int))
+    for index, pred in enumerate(y_pred):
+        gold = set(y_gold[index])
         if pred in gold:
-            count+=1
-            label_wise_score[pred]['total']+=1
-            label_wise_score[pred]['correct']+=1
+            count += 1
+            label_wise_score[pred]['total'] += 1
+            label_wise_score[pred]['correct'] += 1
         else:
-            label_wise_score[pred]['total']+=1
-    label_wise_accuracy=dict()
+            label_wise_score[pred]['total'] += 1
+    label_wise_accuracy = dict()
     for label in label_wise_score.keys():
         try:
             rate = label_wise_score[label]['correct'] / label_wise_score[label]['total']
         except:
             rate = 0
-        label_wise_accuracy[label]=rate
-    total_score=count/len(y_gold)
-    return total_score,label_wise_accuracy
+        label_wise_accuracy[label] = rate
+    total_score = count / len(y_gold)
+    return total_score, label_wise_accuracy
 
-def multiple_label_included_score(y_pred,y_gold,plot_dist=False,figsize=(10, 6)):
+
+def multiple_label_included_score(y_pred, y_gold, plot_dist=False, figsize=(10, 6)):
     """
     this function will computer the score by including
     Example 1:
@@ -82,57 +84,58 @@ def multiple_label_included_score(y_pred,y_gold,plot_dist=False,figsize=(10, 6))
     label_wise_accuracy: a dictionary,where keys are labels, values are float score of the label
                         calculated by example 2
     """
-    assert len(y_pred)==len(y_gold),'y_pred and y_gold need to have same length'
-    count=0
-    num_of_pred=len(y_pred[0])
-    plot_dict=dict((i+1,0)for i in range(num_of_pred))
-    label_wise_score=nltk.defaultdict(lambda: nltk.defaultdict(int))
-    for index,pred in enumerate(y_pred):
-        pred1=set(pred)
-        gold=set(y_gold[index])
-        Intersection=pred1.intersection(gold)
+    assert len(y_pred) == len(y_gold), 'y_pred and y_gold need to have same length'
+    count = 0
+    num_of_pred = len(y_pred[0])
+    plot_dict = dict((i + 1, 0) for i in range(num_of_pred))
+    label_wise_score = nltk.defaultdict(lambda: nltk.defaultdict(int))
+    for index, pred in enumerate(y_pred):
+        pred1 = set(pred)
+        gold = set(y_gold[index])
+        Intersection = pred1.intersection(gold)
         if Intersection:
-            count+=1
+            count += 1
         if plot_dist:
             for prediction in Intersection:
-                i=pred.index(prediction)+1
-                plot_dict[i]+=1
+                i = pred.index(prediction) + 1
+                plot_dict[i] += 1
         for label in pred:
             if label in Intersection:
-                label_wise_score[label]['total']+=1
-                label_wise_score[label]['correct']+=1
+                label_wise_score[label]['total'] += 1
+                label_wise_score[label]['correct'] += 1
             else:
-                label_wise_score[label]['total']+=1
-    label_wise_accuracy=dict()
+                label_wise_score[label]['total'] += 1
+    label_wise_accuracy = dict()
     for label in label_wise_score.keys():
         try:
             rate = label_wise_score[label]['correct'] / label_wise_score[label]['total']
         except:
             rate = 0
-        label_wise_accuracy[label]=rate
-    total_score=count/len(y_gold)
+        label_wise_accuracy[label] = rate
+    total_score = count / len(y_gold)
     if plot_dist:
-        data=[]
-        for position,how_many in plot_dict.items():
-            data.append((position,how_many))
-        data=sorted(data,key=lambda x: x[0])
-        df=pd.DataFrame(data,columns=['position','count'])
+        data = []
+        for position, how_many in plot_dict.items():
+            data.append((position, how_many))
+        data = sorted(data, key=lambda x: x[0])
+        df = pd.DataFrame(data, columns=['position', 'count'])
         sns.set(style="darkgrid")
         plt.figure(figsize=figsize)
-        ax = sns.barplot(x="position", y="count", data=df,
-                         color='lightsalmon', orient='v', saturation=.1)
+        ax = sns.barplot(
+            x="position", y="count", data=df, color='lightsalmon', orient='v', saturation=.1
+        )
         for p in ax.patches:
-            ax.annotate('{0}'.format(int(p.get_height())),
-                        (p.get_x() + .35, p.get_height())
-                        )
+            ax.annotate('{0}'.format(int(p.get_height())), (p.get_x() + .35, p.get_height()))
         for item in ax.get_xticklabels():
             item.set_rotation(0)
-        plt.title('Count of ith position made the correct prediction. {0} in Total'.format(num_of_pred))
+        plt.title(
+            'Count of ith position made the correct prediction. {0} in Total'.format(num_of_pred)
+        )
         plt.show()
-    return total_score,label_wise_accuracy
+    return total_score, label_wise_accuracy
 
 
-def single_label_normal_score(y_pred,y_gold):
+def single_label_normal_score(y_pred, y_gold):
     """
     this function will computer the score by simple compare exact or not
     Example 1:
@@ -157,30 +160,29 @@ def single_label_normal_score(y_pred,y_gold):
     label_wise_accuracy: a dictionary,where keys are labels, values are float score of the label
                         calculated by example 2
     """
-    assert len(y_pred)==len(y_gold),'y_pred and y_gold need to have same length'
-    count=0
-    label_wise_score=nltk.defaultdict(lambda: nltk.defaultdict(int))
-    for index,pred in enumerate(y_pred):
-        gold=y_gold[index]
-        if pred==gold:
-            count+=1
-            label_wise_score[pred]['total']+=1
-            label_wise_score[pred]['correct']+=1
+    assert len(y_pred) == len(y_gold), 'y_pred and y_gold need to have same length'
+    count = 0
+    label_wise_score = nltk.defaultdict(lambda: nltk.defaultdict(int))
+    for index, pred in enumerate(y_pred):
+        gold = y_gold[index]
+        if pred == gold:
+            count += 1
+            label_wise_score[pred]['total'] += 1
+            label_wise_score[pred]['correct'] += 1
         else:
-            label_wise_score[pred]['total']+=1
-    label_wise_accuracy=dict()
+            label_wise_score[pred]['total'] += 1
+    label_wise_accuracy = dict()
     for label in label_wise_score.keys():
         try:
             rate = label_wise_score[label]['correct'] / label_wise_score[label]['total']
         except:
             rate = 0
-        label_wise_accuracy[label]=rate
-    total_score=count/len(y_gold)
-    return total_score,label_wise_accuracy
+        label_wise_accuracy[label] = rate
+    total_score = count / len(y_gold)
+    return total_score, label_wise_accuracy
 
 
-
-def single_label_f_score(y_pred,y_gold):
+def single_label_f_score(y_pred, y_gold):
     """
     this function will computer the F-score
     :param y_pred: a list of labels, must be same length as y_gold
@@ -189,54 +191,53 @@ def single_label_f_score(y_pred,y_gold):
     total_score: float of the total score calculated by average all f-scores for all labels
     label_wise_accuracy: a dictionary,where keys are labels, values are float f-score
     """
-    assert len(y_pred)==len(y_gold),'y_pred and y_gold need to have same length'
-    Y_P=list(y_pred).copy()
-    Y_G=list(y_gold).copy()
+    assert len(y_pred) == len(y_gold), 'y_pred and y_gold need to have same length'
+    Y_P = list(y_pred).copy()
+    Y_G = list(y_gold).copy()
     Y_P.extend(Y_G)
-    all_labels=set(Y_P)
-    label_pairs=[]
-    for index,pred in enumerate(y_pred):
-        label_pairs.append([pred,y_gold[index]])
-    labels_pairs_dict=nltk.defaultdict(list)
+    all_labels = set(Y_P)
+    label_pairs = []
+    for index, pred in enumerate(y_pred):
+        label_pairs.append([pred, y_gold[index]])
+    labels_pairs_dict = nltk.defaultdict(list)
     for label_ in all_labels:
-        for pred,gold in label_pairs:
-            if pred==label_ or gold==label_:
-                labels_pairs_dict[label_].append((pred,gold))
-    labels_f_score=dict()
+        for pred, gold in label_pairs:
+            if pred == label_ or gold == label_:
+                labels_pairs_dict[label_].append((pred, gold))
+    labels_f_score = dict()
     for label in labels_pairs_dict.keys():
-        FP=0
-        FN=0
-        TP=0
-        pair_list=labels_pairs_dict[label]
-        for (pred,gold) in pair_list:
-            if pred==label and gold!=label:
-                FP+=1
-            elif pred!=label and gold==label:
-                FN+=1
-            elif pred==label and gold==label:
-                TP+=1
+        FP = 0
+        FN = 0
+        TP = 0
+        pair_list = labels_pairs_dict[label]
+        for (pred, gold) in pair_list:
+            if pred == label and gold != label:
+                FP += 1
+            elif pred != label and gold == label:
+                FN += 1
+            elif pred == label and gold == label:
+                TP += 1
         try:
-            precision=TP/(TP+FP)
+            precision = TP / (TP + FP)
         except:
-            precision=0
+            precision = 0
         try:
-            recall=TP/(TP+FN)
+            recall = TP / (TP + FN)
         except:
-            recall=0
+            recall = 0
         try:
-            F_score=2*precision*recall/(precision+recall)
+            F_score = 2 * precision * recall / (precision + recall)
         except:
-            F_score=0
-        labels_f_score[label]=F_score
-    SUM=0
-    for l,Fscore in labels_f_score.items():
-        SUM+=Fscore
-    total_score=SUM/len(labels_f_score)
-    return total_score,labels_f_score
+            F_score = 0
+        labels_f_score[label] = F_score
+    SUM = 0
+    for l, Fscore in labels_f_score.items():
+        SUM += Fscore
+    total_score = SUM / len(labels_f_score)
+    return total_score, labels_f_score
 
 
-
-def multiple_label_intersection_score(y_pred,y_gold):
+def multiple_label_intersection_score(y_pred, y_gold):
     """
     this function will computer the score by including
     Example 1:
@@ -264,32 +265,31 @@ def multiple_label_intersection_score(y_pred,y_gold):
     label_wise_accuracy: a dictionary,where keys are labels, values are float score of the label
                         calculated by example 2
     """
-    assert len(y_pred)==len(y_gold),'y_pred and y_gold need to have same length'
-    label_wise_score=nltk.defaultdict(lambda: nltk.defaultdict(int))
-    All_score=[]
-    for index,pred in enumerate(y_pred):
-        pred=set(pred)
-        gold=set(y_gold[index])
-        Intersection=pred.intersection(gold)
-        forward_score=len(Intersection)/len(pred)
-        backward_score=len(Intersection)/len(gold)
-        score=(backward_score+forward_score)/2
+    assert len(y_pred) == len(y_gold), 'y_pred and y_gold need to have same length'
+    label_wise_score = nltk.defaultdict(lambda: nltk.defaultdict(int))
+    All_score = []
+    for index, pred in enumerate(y_pred):
+        pred = set(pred)
+        gold = set(y_gold[index])
+        Intersection = pred.intersection(gold)
+        forward_score = len(Intersection) / len(pred)
+        backward_score = len(Intersection) / len(gold)
+        score = (backward_score + forward_score) / 2
         All_score.append(score)
-        all=pred.union(gold)
+        all = pred.union(gold)
         for label in all:
             if label in Intersection:
-                label_wise_score[label]['total']+=1
-                label_wise_score[label]['correct']+=1
+                label_wise_score[label]['total'] += 1
+                label_wise_score[label]['correct'] += 1
             else:
-                label_wise_score[label]['total']+=1
-                label_wise_score[label]['correct']-=1
-    label_wise_accuracy=dict()
+                label_wise_score[label]['total'] += 1
+                label_wise_score[label]['correct'] -= 1
+    label_wise_accuracy = dict()
     for label in label_wise_score.keys():
         try:
             rate = label_wise_score[label]['correct'] / label_wise_score[label]['total']
         except:
             rate = 0
-        label_wise_accuracy[label]=rate
-    total_score=sum(All_score)/len(All_score)
-    return total_score,label_wise_accuracy
-
+        label_wise_accuracy[label] = rate
+    total_score = sum(All_score) / len(All_score)
+    return total_score, label_wise_accuracy

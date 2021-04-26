@@ -18,59 +18,70 @@ from gensim.models import Word2Vec
 from keras.layers import Embedding, Conv1D, MaxPooling1D, GlobalMaxPooling1D
 
 
-
-
 def process_sow(text):
-    Text=text_tokens(text,lower_bound_percentage=0,higher_bound_percentage=1,minimal_word_length=0,
-                   remove_punctuations=False,
-                   remove_non_letter_characters=True,
-                   lemmatize_the_words=False,
-                   stemmer_the_words=True,
-                   part_of_speech_filter=False,
-                   english_text_filter=False,
-                   stop_words_filter=True,
-                   other_words_filter=False,
-                   remove_adjacent_tokens=False,
-                   tokens_form=False)
+    Text = text_tokens(
+        text,
+        lower_bound_percentage=0,
+        higher_bound_percentage=1,
+        minimal_word_length=0,
+        remove_punctuations=False,
+        remove_non_letter_characters=True,
+        lemmatize_the_words=False,
+        stemmer_the_words=True,
+        part_of_speech_filter=False,
+        english_text_filter=False,
+        stop_words_filter=True,
+        other_words_filter=False,
+        remove_adjacent_tokens=False,
+        tokens_form=False
+    )
     return Text
+
 
 def process_sow_quick(text):
-    Text=text_tokens(text,lower_bound_percentage=0,higher_bound_percentage=1,minimal_word_length=0,
-                   remove_punctuations=False,
-                   remove_non_letter_characters=False,
-                   lemmatize_the_words=False,
-                   stemmer_the_words=False,
-                   part_of_speech_filter=False,
-                   english_text_filter=False,
-                   stop_words_filter=False,
-                   other_words_filter=False,
-                   remove_adjacent_tokens=False,
-                   tokens_form=False)
+    Text = text_tokens(
+        text,
+        lower_bound_percentage=0,
+        higher_bound_percentage=1,
+        minimal_word_length=0,
+        remove_punctuations=False,
+        remove_non_letter_characters=False,
+        lemmatize_the_words=False,
+        stemmer_the_words=False,
+        part_of_speech_filter=False,
+        english_text_filter=False,
+        stop_words_filter=False,
+        other_words_filter=False,
+        remove_adjacent_tokens=False,
+        tokens_form=False
+    )
     return Text
 
 
-def Convolution_Network_classify(input_df,
-                                 feature_column,
-                                 label_column,
-                                 process_text=False,
-                                 test_size=.2,
-                                 random_state=1,
-                                 validation_rate=.1,
-                                 MAX_NB_WORDS=10000,
-                                 embedding_type='w2v',
-                                 embedding_dim=150,
-                                 embedding_epoch=10,
-                                 filters=10,
-                                 kernel_size=4,
-                                 second_con_layer=(10,4),
-                                 batch_size=256,
-                                 epochs=10,
-                                 show_model_summary=True,
-                                 plot_network=True,
-                                 show_validation_plot=True,
-                                 verbose=1,
-                                 show_info=True,
-                                 return_fscore=True):
+def Convolution_Network_classify(
+    input_df,
+    feature_column,
+    label_column,
+    process_text=False,
+    test_size=.2,
+    random_state=1,
+    validation_rate=.1,
+    MAX_NB_WORDS=10000,
+    embedding_type='w2v',
+    embedding_dim=150,
+    embedding_epoch=10,
+    filters=10,
+    kernel_size=4,
+    second_con_layer=(10, 4),
+    batch_size=256,
+    epochs=10,
+    show_model_summary=True,
+    plot_network=True,
+    show_validation_plot=True,
+    verbose=1,
+    show_info=True,
+    return_fscore=True
+):
 
     df = input_df.copy()
     if process_text:
@@ -79,23 +90,35 @@ def Convolution_Network_classify(input_df,
         df[feature_column] = df[feature_column].apply(process_sow_quick)
     features = list(df[feature_column])
     labels = list(df[label_column])
-    label_names=set(labels)
+    label_names = set(labels)
     label_encoder = LabelEncoder()
     integer_encoded = label_encoder.fit_transform(labels)
     onehot_encoder = OneHotEncoder(sparse=False)
     integer_encoded = integer_encoded.reshape(len(integer_encoded), 1)
     onehot_encoded_labels = onehot_encoder.fit_transform(integer_encoded)
-    X_train, X_test, y_train, y_test = train_test_split(features, onehot_encoded_labels, test_size=test_size,
-                                                        random_state=random_state)
+    X_train, X_test, y_train, y_test = train_test_split(
+        features, onehot_encoded_labels, test_size=test_size, random_state=random_state
+    )
     common_texts = [sentence.split(' ') for sentence in features]
-    if embedding_type=='ft':
-        embedding_model=FastText(size=embedding_dim, window=3, min_count=1, sentences=common_texts, iter=embedding_epoch)
-    elif embedding_type=='w2v':
-        embedding_model=Word2Vec(common_texts, size=embedding_dim, window=5, min_count=1, workers=4,iter=embedding_epoch)
+    if embedding_type == 'ft':
+        embedding_model = FastText(
+            size=embedding_dim, window=3, min_count=1, sentences=common_texts, iter=embedding_epoch
+        )
+    elif embedding_type == 'w2v':
+        embedding_model = Word2Vec(
+            common_texts,
+            size=embedding_dim,
+            window=5,
+            min_count=1,
+            workers=4,
+            iter=embedding_epoch
+        )
     else:
-        embedding_model = FastText(size=embedding_dim, window=3, min_count=1, sentences=common_texts, iter=5)
+        embedding_model = FastText(
+            size=embedding_dim, window=3, min_count=1, sentences=common_texts, iter=5
+        )
 
-    doc_len=np.array([len(doc.split(' ')) for doc in  X_train])
+    doc_len = np.array([len(doc.split(' ')) for doc in X_train])
     max_seq_len = np.round(doc_len.mean() + doc_len.std()).astype(int)
     tokenizer = Tokenizer(num_words=MAX_NB_WORDS, lower=True, char_level=False)
     tokenizer.fit_on_texts(X_train + X_test)
@@ -106,7 +129,7 @@ def Convolution_Network_classify(input_df,
     x_test = sequence.pad_sequences(word_seq_test, maxlen=max_seq_len)
     # embedding matrix
     words_not_found = []
-    nb_words = min(MAX_NB_WORDS, len(word_index)+1)
+    nb_words = min(MAX_NB_WORDS, len(word_index) + 1)
     embedding_matrix = np.zeros((nb_words, embedding_dim))
     for word, i in word_index.items():
         if i >= nb_words:
@@ -118,12 +141,22 @@ def Convolution_Network_classify(input_df,
         else:
             words_not_found.append(word)
     model = Sequential()
-    model.add(Embedding(nb_words, embedding_dim,weights=[embedding_matrix],input_length=max_seq_len,trainable=False))
+    model.add(
+        Embedding(
+            nb_words,
+            embedding_dim,
+            weights=[embedding_matrix],
+            input_length=max_seq_len,
+            trainable=False
+        )
+    )
     model.add(Conv1D(filters=filters, kernel_size=kernel_size, activation='relu'))
     if second_con_layer:
-        model.add(Conv1D(filters=second_con_layer[0], kernel_size=second_con_layer[1], activation='relu'))
+        model.add(
+            Conv1D(filters=second_con_layer[0], kernel_size=second_con_layer[1], activation='relu')
+        )
     model.add(GlobalMaxPooling1D())
-    model.add(Dense(len(label_names),activation='softmax'))
+    model.add(Dense(len(label_names), activation='softmax'))
     adam = optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
     model.compile(loss='categorical_crossentropy', optimizer=adam, metrics=['accuracy'])
     if show_model_summary:
@@ -131,12 +164,19 @@ def Convolution_Network_classify(input_df,
     if plot_network:
         plot_model(model, show_shapes=True)
         plt.show()
-    val_size=int(len(x_train)*validation_rate)
+    val_size = int(len(x_train) * validation_rate)
     x_val = x_train[:val_size]
     patial_x_train = x_train[val_size:]
     y_val = y_train[:val_size]
     patial_y_train = y_train[val_size:]
-    history = model.fit(patial_x_train, patial_y_train, batch_size=batch_size, epochs=epochs, validation_data=(x_val, y_val),verbose=verbose)
+    history = model.fit(
+        patial_x_train,
+        patial_y_train,
+        batch_size=batch_size,
+        epochs=epochs,
+        validation_data=(x_val, y_val),
+        verbose=verbose
+    )
     if show_validation_plot:
         plt.figure(figsize=(10, 5))
         plt.plot(history.history['loss'], lw=2.0, color='b', label='train')
@@ -155,8 +195,14 @@ def Convolution_Network_classify(input_df,
         plt.ylabel('Accuracy')
         plt.legend(loc='upper left')
         plt.show()
-    y_test=list(label_encoder.inverse_transform(onehot_encoder.inverse_transform(y_test).astype(int).ravel()))
-    y_pred=list(label_encoder.inverse_transform(model.predict_classes(x_test).astype(int).ravel()))
+    y_test = list(
+        label_encoder.inverse_transform(
+            onehot_encoder.inverse_transform(y_test).astype(int).ravel()
+        )
+    )
+    y_pred = list(
+        label_encoder.inverse_transform(model.predict_classes(x_test).astype(int).ravel())
+    )
     f, cf = single_label_f_score(y_gold=y_test, y_pred=y_pred)
     if show_info:
         print('f-score:', f)
@@ -164,11 +210,11 @@ def Convolution_Network_classify(input_df,
         conf_mat = confusion_matrix(y_test, y_pred)
         fig, ax = plt.subplots(figsize=(4, 4))
         labels = list(set(labels))
-        sns.heatmap(conf_mat, annot=True, cmap="Blues", fmt='d',
-                    xticklabels=labels,
-                    yticklabels=labels)
+        sns.heatmap(
+            conf_mat, annot=True, cmap="Blues", fmt='d', xticklabels=labels, yticklabels=labels
+        )
         plt.ylabel('Actual')
         plt.xlabel('Predicted')
         plt.title("CNN CONFUSION MATRIX", size=16)
     if return_fscore:
-        return f,cf
+        return f, cf
