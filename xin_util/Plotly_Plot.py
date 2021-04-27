@@ -1,3 +1,4 @@
+from raise_error.raise_error_class import TestFailed
 import plotly.graph_objects as go
 import numpy as np
 import pandas as pd
@@ -125,7 +126,7 @@ class Categorical_Scatter:
         elif n_dim == 3:
             Categorical_Scatter.plot3d_plotly(self.X, self.y, marker_size=marker_size)
         else:
-            raise 'X must be 2 or 3 dimensions'
+            raise TestFailed('X must be 2 or 3 dimensions')
 
 
 def demo():
@@ -156,7 +157,7 @@ def demo():
         return X_origin, y
 
     # generate 3d data and plot
-    X_origin, y = generate_spheres(dim=3, radiuses=(1, 2, 3, 4), n_sample_each=300)
+    X_origin, y = generate_spheres(dim=4, radiuses=(1, 2, 3, 4), n_sample_each=300)
     cs = Categorical_Scatter(X_origin, y)
     cs.plot()
 
