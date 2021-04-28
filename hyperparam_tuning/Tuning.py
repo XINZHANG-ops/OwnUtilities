@@ -5,6 +5,11 @@ import numpy as np
 from functools import partial
 from skopt import space, gp_minimize
 import time
+import os
+from tensorflow import keras
+from kerastuner.tuners import BayesianOptimization as keras_BayesianOptimization
+from kerastuner.tuners import RandomSearch as keras_Randomsearch
+from keras.layers import Dense
 
 
 class call_back_bayesian:
@@ -322,6 +327,151 @@ class RandomSearch:
         return sorted(self.history, key=lambda tup: tup[1], reverse=True)
 
 
+class keras_dense_model_tune:
+    def __init__(
+        self,
+        n_layers_min_max_step=(5, 10, 1),
+        layer_size_min_max_step=(5, 100, 5),
+        output_layer_size_act=(None, None),
+        activations=None,
+        optimizers=None,
+        losses=None
+    ):
+        """
+
+        @param output_layer_size_act: this one need to be separated because the output shape, but if set None, it will find the dim from y_train
+        @param n_layers_min_max_step:
+        @param layer_size_min_max_step:
+        @param activations:
+        @param optimizers:
+        @param losses:
+        """
+        self.output_layer_size = output_layer_size_act[0]
+        self.output_layer_act = output_layer_size_act[1]
+        self.n_layers_min = n_layers_min_max_step[0]
+        self.n_layers_max = n_layers_min_max_step[1]
+        self.n_layers_step = n_layers_min_max_step[2]
+        self.layer_size_min = layer_size_min_max_step[0]
+        self.layer_size_max = layer_size_min_max_step[1]
+        self.layer_size_step = layer_size_min_max_step[2]
+        self.activations_default = [
+            'relu', "sigmoid", "softmax", "softplus", "softsign", "tanh", "selu", "elu"
+        ]
+        self.optimizers_default = [
+            "SGD", "RMSprop", "Adam", "Adadelta", "Adagrad", "Adamax", "Nadam", "Ftrl"
+        ]
+        self.losses_default = ["categorical_crossentropy"]
+        if activations is not None:
+            self.activations = activations
+        else:
+            self.activations = self.activations_default.copy()
+        if optimizers is not None:
+            self.optimizers = optimizers
+        else:
+            self.optimizers = self.optimizers_default.copy()
+        if losses is not None:
+            self.losses = losses
+        else:
+            self.losses = self.losses_default.copy()
+
+    def build_model(self, hp):
+        model = keras.models.Sequential()
+        for i in range(hp.Int('n_layers', min_value=self.n_layers_min, max_value=self.n_layers_max,
+                              step=self.n_layers_step)):
+            model.add(
+                Dense(
+                    units=hp.Int(
+                        f'layer_{i}_size',
+                        min_value=self.layer_size_min,
+                        max_value=self.layer_size_max,
+                        step=self.layer_size_step
+                    ),
+                    activation=hp.Choice(f'layer_{i}_act', values=self.activations)
+                )
+            )
+        model.add(Dense(units=self.output_layer_size, activation=self.output_layer_act))
+        model.compile(
+            optimizer=hp.Choice(f'optimizer', values=self.optimizers),
+            loss=hp.Choice(f'loss', values=self.losses),
+            metrics=["accuracy"]
+        )
+        return model
+
+    def ramdom_search_tune(
+        self,
+        x_train,
+        y_train,
+        x_test=None,
+        y_test=None,
+        epochs=10,
+        batch_size=32,
+        n_trials=10,
+        executions_per_trial=1,
+        save_dir=".",
+        project_name='keras_model_tune'
+    ):
+        if self.output_layer_size is None:
+            self.output_layer_size = y_train.shape[1]
+        if self.output_layer_act is None:
+            self.output_layer_act = 'softmax'
+        tuner = keras_Randomsearch(
+            self.build_model,
+            objective='val_accuracy',
+            max_trials=n_trials,
+            executions_per_trial=executions_per_trial,
+            directory=save_dir,
+            project_name=project_name
+        )
+        if x_test is None and y_test is None:
+            x_test = x_train.copy()
+            y_test = y_train.copy()
+        tuner.search(
+            x=x_train,
+            y=y_train,
+            epochs=epochs,
+            batch_size=batch_size,
+            validation_data=(x_test, y_test)
+        )
+        return tuner
+
+    def bayesian_tune(
+        self,
+        x_train,
+        y_train,
+        x_test=None,
+        y_test=None,
+        epochs=10,
+        batch_size=32,
+        n_trials=10,
+        executions_per_trial=1,
+        save_dir=".",
+        project_name='keras_model_tune'
+    ):
+        if self.output_layer_size is None:
+            self.output_layer_size = y_train.shape[1]
+        if self.output_layer_act is None:
+            self.output_layer_act = 'softmax'
+        tuner = keras_BayesianOptimization(
+            self.build_model,
+            objective='val_accuracy',
+            max_trials=n_trials,
+            executions_per_trial=executions_per_trial,
+            directory=save_dir,
+            project_name=project_name
+        )
+        if x_test is None and y_test is None:
+            x_test = x_train.copy()
+            y_test = y_train.copy()
+        tuner.search(
+            x=x_train,
+            y=y_train,
+            epochs=epochs,
+            batch_size=batch_size,
+            validation_data=(x_test, y_test)
+        )
+        return tuner
+
+
 def demo_bayesian():
     import matplotlib.pyplot as plt
     from sklearn.datasets import load_digits
@@ -451,3 +601,41 @@ def demo_random_search():
     plt.scatter(range(len([j for i, j, k in tuning.history])), [j for i, j, k in tuning.history])
     plt.title('scores from all random params')
     plt.show()
+
+
+def keras_turning_demo():
+    import os
+    from tensorflow import keras
+    from keras.datasets import mnist
+
+    kdm = keras_dense_model_tune(
+        n_layers_min_max_step=(5, 10, 1),
+        layer_size_min_max_step=(50, 100, 5),
+        output_layer_size_act=(None, 'softmax'),
+        activations=['relu'],
+        optimizers=['SGD'],
+        losses=['categorical_crossentropy']
+    )
+    (x_train, y_train), (x_test, y_test) = mnist.load_data()
+    image_vector_size = 28 * 28
+    x_train = x_train.reshape(x_train.shape[0], image_vector_size)
+    x_test = x_test.reshape(x_test.shape[0], image_vector_size)
+
+    num_classes = 10
+    y_train = keras.utils.to_categorical(y_train, num_classes)
+    y_test = keras.utils.to_categorical(y_test, num_classes)
+
+    tuner = kdm.bayesian_tune(
+        x_train,
+        y_train,
+        x_test,
+        y_test,
+        epochs=10,
+        batch_size=32,
+        n_trials=2,
+        executions_per_trial=1,
+        save_dir=os.getcwd(),
+        project_name='keras_turning_demo2'
+    )
+    tuner.results_summary()
+
