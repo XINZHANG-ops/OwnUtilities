@@ -918,8 +918,8 @@ def keras_conv_turning_demo():
     kdm = keras_conv2d_model_tune(
         n_conv_layers_min_max_step=(5, 10, 1),
         conv_layer_size_min_max_step=(32, 256, 32),
-        kernel_size_min_max_step = (3, 3, 1),
-        strides_min_max_step = (1, 1, 1),
+        kernel_size_min_max_step=(3, 3, 1),
+        strides_min_max_step=(1, 1, 1),
         output_layer_size_act=(None, 'softmax'),
         activations=['relu'],
         optimizers=['SGD'],
@@ -946,5 +946,3 @@ def keras_conv_turning_demo():
         project_name='keras_conv_turning_demo'
     )
     tuner.results_summary()
-
-keras_dense_turning_demo()
