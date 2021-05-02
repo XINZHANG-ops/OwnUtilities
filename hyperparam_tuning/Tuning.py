@@ -9,7 +9,8 @@ import os
 from tensorflow import keras
 from kerastuner.tuners import BayesianOptimization as keras_BayesianOptimization
 from kerastuner.tuners import RandomSearch as keras_Randomsearch
-from keras.layers import Dense
+from kerastuner.tuners import Hyperband as keras_Hyperband
+from keras.layers import Dense, Conv2D, MaxPool2D, Flatten, Dropout
 
 
 class call_back_bayesian:
@@ -377,22 +378,23 @@ class keras_dense_model_tune:
     def build_model(self, hp):
         model = keras.models.Sequential()
         for i in range(hp.Int('n_layers', min_value=self.n_layers_min, max_value=self.n_layers_max,
-                              step=self.n_layers_step)):
+                              step=self.n_layers_step, default=5)):
             model.add(
                 Dense(
                     units=hp.Int(
                         f'layer_{i}_size',
                         min_value=self.layer_size_min,
                         max_value=self.layer_size_max,
-                        step=self.layer_size_step
+                        step=self.layer_size_step,
+                        default=32
                     ),
-                    activation=hp.Choice(f'layer_{i}_act', values=self.activations)
+                    activation=hp.Choice(f'layer_{i}_act', values=self.activations, default='relu')
                 )
             )
         model.add(Dense(units=self.output_layer_size, activation=self.output_layer_act))
         model.compile(
-            optimizer=hp.Choice(f'optimizer', values=self.optimizers),
-            loss=hp.Choice(f'loss', values=self.losses),
+            optimizer=hp.Choice(f'optimizer', values=self.optimizers, default='SGD'),
+            loss=hp.Choice(f'loss', values=self.losses, default='categorical_crossentropy'),
             metrics=["accuracy"]
         )
         return model
@@ -452,6 +454,274 @@ class keras_dense_model_tune:
         if self.output_layer_act is None:
             self.output_layer_act = 'softmax'
         tuner = keras_BayesianOptimization(
+            self.build_model,
+            objective='val_accuracy',
+            max_trials=n_trials,
+            executions_per_trial=executions_per_trial,
+            directory=save_dir,
+            project_name=project_name
+        )
+        if x_test is None and y_test is None:
+            x_test = x_train.copy()
+            y_test = y_train.copy()
+        tuner.search(
+            x=x_train,
+            y=y_train,
+            epochs=epochs,
+            batch_size=batch_size,
+            validation_data=(x_test, y_test)
+        )
+        return tuner
+
+    def hyperband_tune(
+        self,
+        x_train,
+        y_train,
+        x_test=None,
+        y_test=None,
+        epochs=10,
+        max_epochs=15,
+        factor=1,
+        batch_size=32,
+        executions_per_trial=1,
+        save_dir=".",
+        project_name='keras_model_tune'
+    ):
+        if self.output_layer_size is None:
+            self.output_layer_size = y_train.shape[1]
+        if self.output_layer_act is None:
+            self.output_layer_act = 'softmax'
+        tuner = keras_Hyperband(
+            self.build_model,
+            objective='val_accuracy',
+            max_epochs=max_epochs,
+            factor=factor,
+            executions_per_trial=executions_per_trial,
+            directory=save_dir,
+            project_name=project_name
+        )
+        if x_test is None and y_test is None:
+            x_test = x_train.copy()
+            y_test = y_train.copy()
+        tuner.search(
+            x=x_train,
+            y=y_train,
+            epochs=epochs,
+            batch_size=batch_size,
+            validation_data=(x_test, y_test)
+        )
+        return tuner
+
+
+class keras_conv2d_model_tune:
+    def __init__(
+        self,
+        n_conv_layers_min_max_step=(5, 10, 1),
+        conv_layer_size_min_max_step=(32, 256, 32),
+        kernel_size_min_max_step=(2, 3, 1),
+        strides_min_max_step=(1, 2, 1),
+        output_layer_size_act=(None, None),
+        activations=None,
+        optimizers=None,
+        losses=None
+    ):
+
+        self.output_layer_size = output_layer_size_act[0]
+        self.output_layer_act = output_layer_size_act[1]
+        self.n_conv_layers_min = n_conv_layers_min_max_step[0]
+        self.n_conv_layers_max = n_conv_layers_min_max_step[1]
+        self.n_conv_layers_step = n_conv_layers_min_max_step[2]
+        self.kernel_size_min = kernel_size_min_max_step[0]
+        self.kernel_size_max = kernel_size_min_max_step[1]
+        self.kernel_size_step = kernel_size_min_max_step[2]
+        self.strides_min = strides_min_max_step[0]
+        self.strides_max = strides_min_max_step[1]
+        self.strides_step = strides_min_max_step[2]
+        self.conv_layer_size_min = conv_layer_size_min_max_step[0]
+        self.conv_layer_size_max = conv_layer_size_min_max_step[1]
+        self.conv_layer_size_step = conv_layer_size_min_max_step[2]
+        self.X_train = np.array([])
+        self.activations_default = [
+            'relu', "sigmoid", "softmax", "softplus", "softsign", "tanh", "selu", "elu"
+        ]
+        self.optimizers_default = [
+            "SGD", "RMSprop", "Adam", "Adadelta", "Adagrad", "Adamax", "Nadam", "Ftrl"
+        ]
+        self.losses_default = ["categorical_crossentropy"]
+        if activations is not None:
+            self.activations = activations
+        else:
+            self.activations = self.activations_default.copy()
+        if optimizers is not None:
+            self.optimizers = optimizers
+        else:
+            self.optimizers = self.optimizers_default.copy()
+        if losses is not None:
+            self.losses = losses
+        else:
+            self.losses = self.losses_default.copy()
+
+    def build_model(self, hp):
+        model = keras.models.Sequential()
+        model.add(
+            Conv2D(
+                hp.Int(
+                    'input_conv_units',
+                    min_value=self.conv_layer_size_min,
+                    max_value=self.conv_layer_size_max,
+                    step=self.conv_layer_size_step,
+                    default=32
+                ),
+                kernel_size=hp.Int(
+                    'input_conv_kernel_size',
+                    min_value=self.kernel_size_min,
+                    max_value=self.n_conv_layers_max,
+                    step=self.kernel_size_step,
+                    default=3
+                ),
+                strides=hp.Int(
+                    'input_conv_strides',
+                    min_value=self.strides_min,
+                    max_value=self.strides_max,
+                    step=self.strides_step,
+                    default=1
+                ),
+                input_shape=self.X_train.shape[1:],
+                activation=hp.Choice(f'input_conv_act', values=self.activations, default='relu')
+            )
+        )
+        model.add(MaxPool2D(pool_size=(2, 2)))
+        for i in range(hp.Int('n_conv_layers', min_value=self.n_conv_layers_min,
+                              max_value=self.n_conv_layers_max, step=self.n_conv_layers_step,
+                              default=2)):
+            model.add(
+                Conv2D(
+                    hp.Int(
+                        f'conv_{i}_units',
+                        min_value=self.conv_layer_size_min,
+                        max_value=self.conv_layer_size_max,
+                        step=self.conv_layer_size_step,
+                        default=32
+                    ),
+                    kernel_size=hp.Int(
+                        f'conv_{i}_kernel_size',
+                        min_value=self.kernel_size_min,
+                        max_value=self.n_conv_layers_max,
+                        step=self.kernel_size_step
+                    ),
+                    strides=hp.Int(
+                        f'conv_{i}_strides',
+                        min_value=self.strides_min,
+                        max_value=self.strides_max,
+                        step=self.strides_step
+                    ),
+                    activation=hp.Choice(f'conv_{i}_act', values=self.activations, default='relu')
+                )
+            )
+        model.add(Flatten())
+        model.add(Dense(units=self.output_layer_size, activation=self.output_layer_act))
+        model.compile(
+            optimizer=hp.Choice(f'optimizer', values=self.optimizers),
+            loss=hp.Choice(f'loss', values=self.losses),
+            metrics=["accuracy"]
+        )
+        return model
+
+    def ramdom_search_tune(
+        self,
+        x_train,
+        y_train,
+        x_test=None,
+        y_test=None,
+        epochs=10,
+        batch_size=32,
+        n_trials=10,
+        executions_per_trial=1,
+        save_dir=".",
+        project_name='keras_model_tune'
+    ):
+        self.X_train = x_train.copy()
+        if self.output_layer_size is None:
+            self.output_layer_size = y_train.shape[1]
+        if self.output_layer_act is None:
+            self.output_layer_act = 'softmax'
+        tuner = keras_Randomsearch(
+            self.build_model,
+            objective='val_accuracy',
+            max_trials=n_trials,
+            executions_per_trial=executions_per_trial,
+            directory=save_dir,
+            project_name=project_name
+        )
+        if x_test is None and y_test is None:
+            x_test = x_train.copy()
+            y_test = y_train.copy()
+        tuner.search(
+            x=x_train,
+            y=y_train,
+            epochs=epochs,
+            batch_size=batch_size,
+            validation_data=(x_test, y_test)
+        )
+        return tuner
+
+    def bayesian_tune(
+        self,
+        x_train,
+        y_train,
+        x_test=None,
+        y_test=None,
+        epochs=10,
+        batch_size=32,
+        n_trials=10,
+        executions_per_trial=1,
+        save_dir=".",
+        project_name='keras_model_tune'
+    ):
+        self.X_train = x_train.copy()
+        if self.output_layer_size is None:
+            self.output_layer_size = y_train.shape[1]
+        if self.output_layer_act is None:
+            self.output_layer_act = 'softmax'
+        tuner = keras_BayesianOptimization(
+            self.build_model,
+            objective='val_accuracy',
+            max_trials=n_trials,
+            executions_per_trial=executions_per_trial,
+            directory=save_dir,
+            project_name=project_name
+        )
+        if x_test is None and y_test is None:
+            x_test = x_train.copy()
+            y_test = y_train.copy()
+        tuner.search(
+            x=x_train,
+            y=y_train,
+            epochs=epochs,
+            batch_size=batch_size,
+            validation_data=(x_test, y_test)
+        )
+        return tuner
+
+    def hyperband_tune(
+        self,
+        x_train,
+        y_train,
+        x_test=None,
+        y_test=None,
+        epochs=10,
+        batch_size=32,
+        n_trials=10,
+        executions_per_trial=1,
+        save_dir=".",
+        project_name='keras_model_tune'
+    ):
+        self.X_train = x_train.copy()
+        if self.output_layer_size is None:
+            self.output_layer_size = y_train.shape[1]
+        if self.output_layer_act is None:
+            self.output_layer_act = 'softmax'
+        tuner = keras_Hyperband(
             self.build_model,
             objective='val_accuracy',
             max_trials=n_trials,
@@ -603,7 +873,7 @@ def demo_random_search():
     plt.show()
 
 
-def keras_turning_demo():
+def keras_dense_turning_demo():
     import os
     from tensorflow import keras
     from keras.datasets import mnist
@@ -632,10 +902,49 @@ def keras_turning_demo():
         y_test,
         epochs=10,
         batch_size=32,
-        n_trials=2,
+        n_trials=10,
         executions_per_trial=1,
         save_dir=os.getcwd(),
-        project_name='keras_turning_demo2'
+        project_name='keras_dense_turning_demo'
     )
     tuner.results_summary()
 
+
+def keras_conv_turning_demo():
+    import os
+    from tensorflow import keras
+    from keras.datasets import fashion_mnist
+
+    kdm = keras_conv2d_model_tune(
+        n_conv_layers_min_max_step=(5, 10, 1),
+        conv_layer_size_min_max_step=(32, 256, 32),
+        kernel_size_min_max_step = (3, 3, 1),
+        strides_min_max_step = (1, 1, 1),
+        output_layer_size_act=(None, 'softmax'),
+        activations=['relu'],
+        optimizers=['SGD'],
+        losses=['categorical_crossentropy']
+    )
+    (x_train, y_train), (x_test, y_test) = fashion_mnist.load_data()
+    x_train = x_train.reshape(x_train.shape[0], 28, 28, 1)
+    x_test = x_test.reshape(x_test.shape[0], 28, 28, 1)
+
+    num_classes = 10
+    y_train = keras.utils.to_categorical(y_train, num_classes)
+    y_test = keras.utils.to_categorical(y_test, num_classes)
+
+    tuner = kdm.bayesian_tune(
+        x_train,
+        y_train,
+        x_test,
+        y_test,
+        epochs=10,
+        batch_size=32,
+        n_trials=2,
+        executions_per_trial=1,
+        save_dir=os.getcwd(),
+        project_name='keras_conv_turning_demo'
+    )
+    tuner.results_summary()
+
+keras_dense_turning_demo()
