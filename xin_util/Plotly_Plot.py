@@ -5,14 +5,17 @@ import pandas as pd
 
 
 class Categorical_Scatter:
-    def __init__(self, X, y):
+    def __init__(self, X, y=None):
         """
 
         @param X: array, rows are samples, columns are features, 3 features at most
         @param y: array, indicates the categories for each data point
         """
         self.X = X
-        self.y = y
+        if y is None:
+            self.y = np.ones(X.shape[0])
+        else:
+            self.y = y
 
     @staticmethod
     def plot3d_plotly(X, y, marker_size=7):
