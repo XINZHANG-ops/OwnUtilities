@@ -37,7 +37,7 @@ class gpu_features:
 
 
 class general_features:
-    def __init__(self, features=None, with_dafault_features=True):
+    def __init__(self, features=None, with_dafault_features=True, install_lshw=False):
         """
         if doesn't work run "sudo apt-get install lshw" first in command
         check here or lshw documentation for all class names:
@@ -46,7 +46,8 @@ class general_features:
         @param features:
         @param with_dafault_features:
         """
-        os.system("sudo apt-get install lshw")
+        if install_lshw:
+            os.system("sudo apt-get install lshw")
         self.default_features = ['cpu', 'memory', 'network']
         self.features = None
         if features is None:
