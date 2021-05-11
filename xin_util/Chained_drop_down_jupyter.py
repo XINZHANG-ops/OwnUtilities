@@ -19,6 +19,7 @@ class chain_drop_down:
         """
         self.df = df
         self.all_widgets = []
+        self.intersted_features = []
 
     def create_dropdown(self, intersted_features):
         """
@@ -28,6 +29,7 @@ class chain_drop_down:
         """
         df = self.df.dropna(subset=intersted_features)
         df_obj = CreateDIYdictFromDataFrame(df)
+        self.intersted_features = intersted_features
         all_dicts = []
         for i in range(len(intersted_features) - 1):
             all_dicts.append(
@@ -57,6 +59,13 @@ class chain_drop_down:
                 all_widgets[index + 1].options = all_dicts[index][kwargs.get(fea_name)]
 
         return self.all_widgets
+
+    def get_filtered_df(self):
+        df_temp = self.df.copy()
+        for index, w in enumerate(self.all_widgets):
+            feature = self.intersted_features[index]
+            df_temp = df_temp[df_temp[feature] == w.value]
+        return df_temp
 
 
 def demo():
