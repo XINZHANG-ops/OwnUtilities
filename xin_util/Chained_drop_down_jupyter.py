@@ -21,6 +21,13 @@ class chain_drop_down:
         self.all_widgets = []
         self.intersted_features = []
 
+    @staticmethod
+    def loop_dict(logic_dict, key_chain):
+        d = logic_dict.copy()
+        for k in key_chain:
+            d = d[k]
+        return d
+
     def create_dropdown(self, intersted_features):
         """
 
@@ -30,23 +37,28 @@ class chain_drop_down:
         df = self.df.dropna(subset=intersted_features)
         df_obj = CreateDIYdictFromDataFrame(df)
         self.intersted_features = intersted_features
-        all_dicts = []
-        for i in range(len(intersted_features) - 1):
-            all_dicts.append(
-                df_obj.DIY_dict([intersted_features[i], intersted_features[i + 1]],
-                                convert_to=lambda x: list(set(x)))
-            )
+        logic_dict = df_obj.DIY_dict(intersted_features, convert_to=lambda x: list(set(x)))
+
         all_widgets = [
             widgets.Dropdown(
-                options=sorted(list(all_dicts[0].keys())), description=intersted_features[0]
+                options=sorted(list(logic_dict.keys())), description=intersted_features[0]
             )
         ]
+
+        widget_values = []
         for index, feature in enumerate(intersted_features[1:]):
             widget_init = all_widgets[-1].value
-            new_widget = widgets.Dropdown(
-                options=sorted(list(all_dicts[index][widget_init])),
-                description=intersted_features[index + 1]
-            )
+            widget_values.append(widget_init)
+            new_options = chain_drop_down.loop_dict(logic_dict, widget_values)
+            try:
+                new_widget = widgets.Dropdown(
+                    options=sorted(list(new_options.keys())),
+                    description=intersted_features[index + 1]
+                )
+            except AttributeError:
+                new_widget = widgets.Dropdown(
+                    options=sorted(new_options), description=intersted_features[index + 1]
+                )
             all_widgets.append(new_widget)
 
         self.all_widgets = all_widgets
@@ -56,7 +68,13 @@ class chain_drop_down:
         @interact(**name_widget_dict)
         def print_city(**kwargs):
             for index, fea_name in enumerate(intersted_features[:-1]):
-                all_widgets[index + 1].options = all_dicts[index][kwargs.get(fea_name)]
+                pre_widgets = all_widgets[:index + 1]
+                pre_values = [w.value for w in pre_widgets]
+                new_options = chain_drop_down.loop_dict(logic_dict, pre_values)
+                try:
+                    all_widgets[index + 1].options = sorted(list(new_options.keys()))
+                except AttributeError:
+                    all_widgets[index + 1].options = sorted(new_options)
 
         return self.all_widgets
 
