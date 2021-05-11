@@ -14,7 +14,7 @@ from CreateDIYdictFromDataFrame import CreateDIYdictFromDataFrame
 class chain_drop_down:
     def __init__(self, df):
         """
-
+        Note that this only works for categorical columns
         @param df: a dataframe object
         """
         self.df = df
