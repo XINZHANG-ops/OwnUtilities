@@ -8,7 +8,7 @@
 import ipywidgets as widgets
 from ipywidgets import interact
 from IPython.display import display
-from CreateDIYdictFromDataFrame import CreateDIYdictFromDataFrame
+from .CreateDIYdictFromDataFrame import CreateDIYdictFromDataFrame
 
 
 class chain_drop_down:
