@@ -66,7 +66,7 @@ class chain_drop_down:
                                 for index, name in enumerate(intersted_features))
 
         @interact(**name_widget_dict)
-        def print_city(**kwargs):
+        def print_widget(**kwargs):
             for index, fea_name in enumerate(intersted_features[:-1]):
                 pre_widgets = all_widgets[:index + 1]
                 pre_values = [w.value for w in pre_widgets]
