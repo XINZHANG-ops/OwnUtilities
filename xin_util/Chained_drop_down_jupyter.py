@@ -7,7 +7,7 @@
 
 import ipywidgets as widgets
 from ipywidgets import interact
-from IPython.display import display
+from ipywidgets import Layout
 from .CreateDIYdictFromDataFrame import CreateDIYdictFromDataFrame
 
 
@@ -28,10 +28,12 @@ class chain_drop_down:
             d = d[k]
         return d
 
-    def create_dropdown(self, intersted_features):
+    def create_dropdown(self, intersted_features, width='30%', height='20px'):
         """
 
-        @param intersted_features: a list of str, col names of df(the order matters)
+        @param intersted_features: list of column names
+        @param width:
+        @param height:
         @return:
         """
         df = self.df.dropna(subset=intersted_features)
@@ -41,7 +43,10 @@ class chain_drop_down:
 
         all_widgets = [
             widgets.Dropdown(
-                options=sorted(list(logic_dict.keys())), description=intersted_features[0]
+                options=sorted(list(logic_dict.keys())),
+                description=intersted_features[0],
+                style={'description_width': 'initial'},
+                layout=Layout(width=width, height=height)
             )
         ]
 
@@ -53,11 +58,16 @@ class chain_drop_down:
             try:
                 new_widget = widgets.Dropdown(
                     options=sorted(list(new_options.keys())),
-                    description=intersted_features[index + 1]
+                    description=intersted_features[index + 1],
+                    style={'description_width': 'initial'},
+                    layout=Layout(width=width, height=height)
                 )
             except AttributeError:
                 new_widget = widgets.Dropdown(
-                    options=sorted(new_options), description=intersted_features[index + 1]
+                    options=sorted(new_options),
+                    description=intersted_features[index + 1],
+                    style={'description_width': 'initial'},
+                    layout=Layout(width=width, height=height)
                 )
             all_widgets.append(new_widget)
 
