@@ -18,7 +18,7 @@ class Categorical_Scatter:
             self.y = y
 
     @staticmethod
-    def plot3d_plotly(X, y, marker_size=7):
+    def plot3d_plotly(X, y, marker_size=7, width=500, height=500):
         # x has 3 columns, y indicates the labels
         import random
         random.seed(0)
@@ -67,8 +67,8 @@ class Categorical_Scatter:
                 )
             )
         fig.update_layout(
-            width=800,
-            height=700,
+            width=width,
+            height=height,
             autosize=False,
             scene=dict(
                 camera=dict(up=dict(x=0, y=0, z=1), eye=dict(
@@ -83,7 +83,7 @@ class Categorical_Scatter:
         fig.show()
 
     @staticmethod
-    def plot2d_plotly(X, y, marker_size=7):
+    def plot2d_plotly(X, y, marker_size=7, width=500, height=500):
         import random
         random.seed(0)
         r = lambda: random.randint(0, 255)
@@ -107,8 +107,8 @@ class Categorical_Scatter:
                 )
             )
         fig.update_layout(
-            width=800,
-            height=700,
+            width=width,
+            height=height,
             autosize=False,
             scene=dict(
                 camera=dict(up=dict(x=0, y=0, z=1), eye=dict(
@@ -122,12 +122,12 @@ class Categorical_Scatter:
         )
         fig.show()
 
-    def plot(self, marker_size=7):
+    def plot(self, marker_size=7, width=500, height=500):
         n_sample, n_dim = self.X.shape
         if n_dim == 2:
-            Categorical_Scatter.plot2d_plotly(self.X, self.y, marker_size=marker_size)
+            Categorical_Scatter.plot2d_plotly(self.X, self.y, marker_size=marker_size, width=width, height=height)
         elif n_dim == 3:
-            Categorical_Scatter.plot3d_plotly(self.X, self.y, marker_size=marker_size)
+            Categorical_Scatter.plot3d_plotly(self.X, self.y, marker_size=marker_size, width=width, height=height)
         else:
             raise TestFailed('X must be 2 or 3 dimensions')
 
