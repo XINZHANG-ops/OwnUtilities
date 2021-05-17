@@ -160,7 +160,7 @@ def demo():
         return X_origin, y
 
     # generate 3d data and plot
-    X_origin, y = generate_spheres(dim=4, radiuses=(1, 2, 3, 4), n_sample_each=300)
+    X_origin, y = generate_spheres(dim=3, radiuses=(1, 2, 3, 4), n_sample_each=300)
     cs = Categorical_Scatter(X_origin, y)
     cs.plot()
 
