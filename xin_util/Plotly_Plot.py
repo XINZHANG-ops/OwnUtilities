@@ -125,9 +125,13 @@ class Categorical_Scatter:
     def plot(self, marker_size=7, width=500, height=500):
         n_sample, n_dim = self.X.shape
         if n_dim == 2:
-            Categorical_Scatter.plot2d_plotly(self.X, self.y, marker_size=marker_size, width=width, height=height)
+            Categorical_Scatter.plot2d_plotly(
+                self.X, self.y, marker_size=marker_size, width=width, height=height
+            )
         elif n_dim == 3:
-            Categorical_Scatter.plot3d_plotly(self.X, self.y, marker_size=marker_size, width=width, height=height)
+            Categorical_Scatter.plot3d_plotly(
+                self.X, self.y, marker_size=marker_size, width=width, height=height
+            )
         else:
             raise TestFailed('X must be 2 or 3 dimensions')
 
