@@ -5,6 +5,7 @@
 ****************************************
 """
 
+
 def find_top_n_faster(vlist, top_n, method="min"):
     print(f'finding top {top_n} values')
     top_n_value_dict = {0: vlist[0]}
