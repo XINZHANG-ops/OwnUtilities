@@ -8,6 +8,7 @@ from ipywidgets import IntProgress, Layout
 from IPython.display import display
 import time
 
+
 class progress_bar:
     def __init__(self, min_value, max_value, width='30%', height='30px'):
         self.progressbar = IntProgress(

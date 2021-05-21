@@ -6,7 +6,7 @@
 """
 
 
-def find_top_n_faster(vlist, top_n, method="min"):
+def find_top_n_faster(vlist, top_n, method="min", show_progress=True):
     print(f'finding top {top_n} values')
     top_n_value_dict = {0: vlist[0]}
     top_n_index_dict = {0: 0}
@@ -26,8 +26,12 @@ def find_top_n_faster(vlist, top_n, method="min"):
             current_extreme_key = top_n_inverse_value[current_extreme_value]
         else:
             continue
-
-    for idx, value in enumerate(vlist[top_n:]):
+    if show_progress:
+        from tqdm import tqdm
+        loop_pre_fun = tqdm
+    else:
+        loop_pre_fun = list
+    for idx, value in enumerate(loop_pre_fun(vlist[top_n:])):
         list_index = idx + top_n
         if value < current_extreme_value and method == 'min':
             top_n_value_dict[current_extreme_key] = value
@@ -47,12 +51,18 @@ def find_top_n_faster(vlist, top_n, method="min"):
     return list(top_n_value_dict.values()), list(top_n_index_dict.values())
 
 
-def find_top_n(vlist, top_n, method="min"):
+def find_top_n(vlist, top_n, method="min", show_progress=True):
     print(f'finding top {top_n} values')
     top_n_l = vlist[:top_n]
     top_n_index = list(range(top_n))
+    if show_progress:
+        from tqdm import tqdm
+        loop_pre_fun = tqdm
+    else:
+        loop_pre_fun = list
+
     if method == 'max':
-        for idx, v in enumerate(vlist[top_n:]):
+        for idx, v in enumerate(loop_pre_fun(vlist[top_n:])):
             min_in_l = min(top_n_l)
             min_idx = top_n_l.index(min_in_l)
             if v > min_in_l:
@@ -60,7 +70,7 @@ def find_top_n(vlist, top_n, method="min"):
                 top_n_index[min_idx] = idx + top_n
 
     elif method == 'min':
-        for idx, v in enumerate(vlist[top_n:]):
+        for idx, v in enumerate(loop_pre_fun(vlist[top_n:])):
             max_in_l = max(top_n_l)
             max_idx = top_n_l.index(max_in_l)
             if v < max_in_l:
@@ -81,15 +91,18 @@ def demo():
     method = 'min'
 
     start = time.time()
-    x1, y1 = find_top_n_faster(a, top_n, method)
+    x1, y1 = find_top_n_faster(a, top_n, method, show_progress=True)
     print(x1, y1)
     print(time.time() - start)
 
     start = time.time()
-    x2, y2 = find_top_n(a, top_n, method)
+    x2, y2 = find_top_n(a, top_n, method, show_progress=True)
     print(x2, y2)
     print(time.time() - start)
 
     print('verify------')
     print([a[i] for i in y1])
     print([a[i] for i in y2])
+
+
+demo()
