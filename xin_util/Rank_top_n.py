@@ -103,6 +103,3 @@ def demo():
     print('verify------')
     print([a[i] for i in y1])
     print([a[i] for i in y2])
-
-
-demo()
