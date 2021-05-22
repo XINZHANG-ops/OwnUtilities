@@ -1,6 +1,5 @@
 import os
 import json
-import pickle
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.signal import savgol_filter
