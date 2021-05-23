@@ -77,6 +77,10 @@ class gen_nn:
         self.losses = ["mae", "mape", "mse", "msle", "poisson", "categorical_crossentropy"]
 
     @staticmethod
+    def nothing(x):
+        return x
+
+    @staticmethod
     def build_dense_model(layer_sizes, activations, optimizer, loss):
         model_dense = Sequential()
         for index, size in enumerate(layer_sizes):
@@ -123,9 +127,13 @@ class gen_nn:
             'loss': loss
         }
 
-    def generate_model_configs(self, num_model_data=1000):
+    def generate_model_configs(self, num_model_data=1000, progress=True):
         model_configs = []
-        for i in tqdm(range(num_model_data)):
+        if progress:
+            loop_fun = tqdm
+        else:
+            loop_fun = gen_nn.nothing
+        for i in loop_fun(range(num_model_data)):
             data = self.generate_model()
             del data['model']
             model_configs.append(data)
@@ -176,13 +184,17 @@ class model_train_data:
         self.loss_mapping = dict((loss, index + 1)
                                  for index, loss in enumerate(self.losses))
 
-    def get_train_data(self):
+    def get_train_data(self, progress=True):
         model_data = []
         model_configs = []
+        if progress:
+            loop_fun = tqdm
+        else:
+            loop_fun = gen_nn.nothing
         for info_dict in self.model_configs:
             d2 = copy.deepcopy(info_dict)
             model_configs.append(d2)
-        for model_config in tqdm(model_configs):
+        for model_config in loop_fun(model_configs):
             model = gen_nn.build_dense_model(
                 layer_sizes=model_config['layer_sizes'],
                 activations=model_config['activations'],
@@ -316,7 +328,6 @@ def demo():
         truncate_from=2,
         trials=2,
         batch_strategy='random',
-        encoding_multiplier=10
     )
     model_data = mtd.get_train_data()
     df, scaler = mtd.convert_config_data(
