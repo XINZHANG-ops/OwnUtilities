@@ -297,3 +297,32 @@ class model_train_data:
             return pd.DataFrame(
                 scaled_data, columns=layer_names + act_names + ['optimizer', 'loss', 'batch_size']
             )
+
+
+def demo():
+    data_points = 1000
+    gnn = gen_nn(
+        hidden_layers_num_lower=5,
+        hidden_layers_num_upper=51,
+        hidden_layer_size_lower=1,
+        hidden_layer_size_upper=501,
+        activation='random',
+        optimizer='random',
+        loss='random'
+    )
+    model_configs = gnn.generate_model_configs(num_model_data=data_points)
+    mtd = model_train_data(
+        model_configs,
+        batch_sizes=[2**i for i in range(1, 9)],
+        epochs=5,
+        truncate_from=2,
+        trials=2,
+        batch_strategy='random',
+        encoding_multiplier=10
+    )
+    model_data = mtd.get_train_data()
+    df, scaler = mtd.convert_config_data(
+        model_data, layer_num_upper=50, layer_na_fill=0, act_na_fill=0, min_max_scaler=True
+    )
+
+    df
