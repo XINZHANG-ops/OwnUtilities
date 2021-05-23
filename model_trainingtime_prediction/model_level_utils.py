@@ -141,7 +141,6 @@ class model_train_data:
         truncate_from=None,
         trials=None,
         batch_strategy='all',
-        encoding_multiplier=10
     ):
         """
 
@@ -152,7 +151,6 @@ class model_train_data:
         @param trials:
         @param batch_strategy: str: `random` or `all`, random will random one from batch_sizes for each model,
         'all' will train for all batch_sizes in batch_sizes for each model
-        @param encoding_multiplier: make encoding for categorical feature bigger for MinMax scaler
         """
         self.model_configs = []
         for info_dict in model_configs:
@@ -171,11 +169,11 @@ class model_train_data:
             "sgd", "rmsprop", "adam", "adadelta", "adagrad", "adamax", "nadam", "ftrl"
         ]
         self.losses = ["mae", "mape", "mse", "msle", "poisson", "categorical_crossentropy"]
-        self.act_mapping = dict((act, (index + 1) * encoding_multiplier)
+        self.act_mapping = dict((act, index + 1)
                                 for index, act in enumerate(self.activation_fcts))
-        self.opt_mapping = dict((opt, (index + 1) * encoding_multiplier)
+        self.opt_mapping = dict((opt, index + 1)
                                 for index, opt in enumerate(self.optimizers))
-        self.loss_mapping = dict((loss, (index + 1) * encoding_multiplier)
+        self.loss_mapping = dict((loss, index + 1)
                                  for index, loss in enumerate(self.losses))
 
     def get_train_data(self):
