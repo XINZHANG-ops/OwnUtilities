@@ -1,5 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from xin_util.Rank_top_n import find_top_n_faster
+import nltk
+from tqdm import tqdm
 
 
 def plot_stacked_bar(
@@ -74,6 +77,38 @@ def plot_stacked_bar(
                     ha="center",
                     va="center"
                 )
+
+
+def distribution_bar(values, bars=10, width_shrink=0.99, progress=True, **kwargs):
+    max_val = max(values)
+    min_val = min(values)
+    space = np.linspace(max_val, min_val, bars)
+    bar_divide = list(nltk.bigrams(space))
+    x_loc = np.array([np.mean(i + j) for i, j in bar_divide])
+    width = 2 * (bar_divide[0][1] - bar_divide[0][0]) * width_shrink
+
+    if progress:
+        f = tqdm
+    else:
+        f = list
+    bar_heights = [0] * len(x_loc)
+    for x_value in f(values):
+        distances = np.abs(x_loc - x_value)
+        _, sort_idx = find_top_n_faster(distances, 1, 'min', False)
+        sort_idx = sort_idx[0]
+        bar_heights[sort_idx] += 1
+    plt.figure(figsize=kwargs.get('figsize', (12, 5)))
+    plt.bar(x=x_loc, height=bar_heights, width=width)
+    plt.xticks(fontsize=kwargs.get('fontsize', 20), rotation='vertical')
+    plt.margins(0.01)
+    plt.title("distribution plot", fontsize=kwargs.get('fontsize', 20))
+    plt.ylabel('count', fontsize=kwargs.get('fontsize', 20))
+    plt.show()
+
+
+def demo_dist_plot():
+    a = list(np.random.uniform(low=-1.0, high=1.0, size=200))
+    distribution_bar(a, bars=10, width_shrink=0.8, progress=True, fontsize=13)
 
 
 # Example

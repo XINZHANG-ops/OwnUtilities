@@ -148,7 +148,7 @@ class model_train_data:
         epochs=None,
         truncate_from=None,
         trials=None,
-        batch_strategy='all',
+        batch_strategy='random',
     ):
         """
 
@@ -318,28 +318,267 @@ class model_train_data:
 
 
 def demo():
+    import random
+    import matplotlib.pyplot as plt
+    # whole pipeline demo
+
+    # generate model configurations as data points
     data_points = 1000
     gnn = gen_nn(
-        hidden_layers_num_lower=5,
+        hidden_layers_num_lower=1,
         hidden_layers_num_upper=51,
         hidden_layer_size_lower=1,
-        hidden_layer_size_upper=501,
+        hidden_layer_size_upper=1001,
         activation='random',
         optimizer='random',
         loss='random'
     )
     model_configs = gnn.generate_model_configs(num_model_data=data_points)
+
+    # train generated model configurations to get training time
     mtd = model_train_data(
         model_configs,
         batch_sizes=[2**i for i in range(1, 9)],
         epochs=5,
-        truncate_from=2,
+        truncate_from=1,
         trials=2,
         batch_strategy='random',
     )
     model_data = mtd.get_train_data()
+
+    # convert raw data as dataframe and scaler
     df, scaler = mtd.convert_config_data(
         model_data, layer_num_upper=50, layer_na_fill=0, act_na_fill=0, min_max_scaler=True
     )
 
-    df
+    # use data to train a ML model
+    test_ratio = 0.2
+    df_index = df.index.tolist()
+    np.random.shuffle(df_index)
+
+    middle_index = int(df.shape[0] * test_ratio)
+    test_idx = df_index[:middle_index]
+    train_idx = df_index[middle_index:]
+
+    df_train = df.iloc[train_idx]
+    df_test = df.iloc[test_idx]
+
+    # we need to train 2 models, one to predict batch runtime, one to predict setup time
+    # combine both will be the true training time of a model
+    feature_cols = df.columns.tolist()[:-3]
+    target_col = 'batch_time'
+    setup_col = 'setup_time'
+
+    x_train = df_train[feature_cols].to_numpy()
+    y_batch_train = np.array(df_train[target_col].tolist())
+    y_setup_train = np.array(df_train[setup_col].tolist())
+
+    x_test = df_test[feature_cols].to_numpy()
+    y_batch_test = np.array(df_test[target_col].tolist())
+    y_setup_test = np.array(df_test[setup_col].tolist())
+
+    # build a regular dense model for batch time prediction
+    from keras.models import Sequential
+    from keras.layers import Dense
+
+    batch_model = Sequential()
+    batch_model.add(
+        Dense(200, input_dim=x_train.shape[1], kernel_initializer='normal', activation='relu')
+    )
+    batch_model.add(Dense(200, kernel_initializer='normal', activation='relu'))
+    batch_model.add(Dense(200, kernel_initializer='normal', activation='relu'))
+    batch_model.add(Dense(200, kernel_initializer='normal', activation='relu'))
+    batch_model.add(Dense(1, kernel_initializer='normal'))
+    # Compile model
+    batch_model.compile(loss='mean_squared_error', optimizer='adam')
+
+    history_batch = batch_model.fit(
+        x_train,
+        y_batch_train,
+        batch_size=16,
+        epochs=50,
+        validation_data=(x_test, y_batch_test),
+        verbose=True
+    )
+
+    # summarize history for loss
+    plt.plot(history_batch.history['loss'])
+    plt.plot(history_batch.history['val_loss'])
+    plt.title('model loss')
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'test'], loc='upper left')
+    plt.show()
+
+    # plot predictions vs true for batch model
+    batch_y_pred = batch_model.predict(x_test)
+    batch_y_pred = batch_y_pred.reshape(batch_y_pred.shape[0], )
+    plt.scatter(batch_y_pred, y_batch_test)
+    plt.show()
+
+    # build a dense model for setup time prediction
+    setup_model = Sequential()
+    setup_model.add(
+        Dense(200, input_dim=x_train.shape[1], kernel_initializer='normal', activation='relu')
+    )
+    setup_model.add(Dense(200, kernel_initializer='normal', activation='relu'))
+    setup_model.add(Dense(200, kernel_initializer='normal', activation='relu'))
+    setup_model.add(Dense(200, kernel_initializer='normal', activation='relu'))
+    setup_model.add(Dense(1, kernel_initializer='normal'))
+    # Compile model
+    setup_model.compile(loss='mean_squared_error', optimizer='adam')
+    history_setup = setup_model.fit(
+        x_train,
+        y_setup_train,
+        batch_size=16,
+        epochs=45,
+        validation_data=(x_test, y_setup_test),
+        verbose=True
+    )
+
+    # summarize history for loss
+    plt.plot(history_setup.history['loss'])
+    plt.plot(history_setup.history['val_loss'])
+    plt.title('model loss')
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'test'], loc='upper left')
+    plt.show()
+
+    # plot predictions vs true for setup time model
+    setup_y_pred = setup_model.predict(x_test)
+    setup_y_pred = setup_y_pred.reshape(setup_y_pred.shape[0], )
+    plt.scatter(setup_y_pred, y_setup_test)
+    plt.show()
+
+    # validate on a real case
+    val_data_points = 100
+    val_genn = gen_nn(
+        hidden_layers_num_lower=50,
+        hidden_layers_num_upper=51,
+        hidden_layer_size_lower=1,
+        hidden_layer_size_upper=1001,
+        activation='random',
+        optimizer='random',
+        loss='random'
+    )
+    val_model_configs = val_genn.generate_model_configs(num_model_data=val_data_points)
+
+    # collect all info during training
+    real_time_process_first_batchs = []
+    real_time_batchs = []
+    real_time_epochs = []
+    real_time_start_ends = []
+    y_val_preds_batch = []
+    y_val_preds_setup = []
+    batch_sizes_collect = []
+    epochs_collect = []
+    data_points_collect = []
+
+    mtd_val = model_train_data([])
+    for m_config in tqdm(val_model_configs):
+        # here we consider changeable data size and epoch
+        batch_size_val = random.sample(mtd_val.batch_sizes, 1)[0]
+        epochs_val = random.sample([2, 3, 4, 5], 1)[0]
+        data_size_val = random.sample([5000, 10000, 15000, 1000], 1)[0]
+        data_points_collect.append(data_size_val)
+        batch_sizes_collect.append(batch_size_val)
+        epochs_collect.append(epochs_val)
+
+        model_val = gen_nn.build_dense_model(
+            layer_sizes=m_config['layer_sizes'],
+            activations=m_config['activations'],
+            optimizer=m_config['optimizer'],
+            loss=m_config['loss']
+        )
+
+        try:
+            input_shape = model_val.get_config()['layers'][0]['config']['units']
+        except:
+            input_shape = model_val.get_config()['layers'][0]['config']['batch_input_shape'][1]
+        out_shape = model_val.get_config()['layers'][-1]['config']['units']
+        x = np.ones((data_size_val, input_shape), dtype=np.float32)
+        y = np.ones((data_size_val, out_shape), dtype=np.float32)
+
+        time_callback = TimeHistory()
+        model_val.fit(
+            x,
+            y,
+            epochs=epochs_val,
+            batch_size=batch_size_val,
+            callbacks=[time_callback],
+            verbose=False
+        )
+
+        batch_median = np.median(time_callback.batch_times[2:])
+        # remove first batch to remove the effect of setup, and compensate with median batch time
+        real_time_process_first_batchs.append(
+            sum([batch_median] + time_callback.batch_times[1:]) * 1000
+        )
+        real_time_batchs.append(sum(time_callback.batch_times) * 1000)
+        real_time_epochs.append(sum(time_callback.epoch_times) * 1000)
+        real_time_start_ends.append(
+            (time_callback.train_end_time - time_callback.train_start_time) * 1000
+        )
+
+        train_batch_numbers = math.ceil(data_size_val / batch_size_val) * epochs_val
+
+        x_val = mtd_val.convert_model_data(
+            model_val,
+            50,
+            m_config['optimizer'],
+            m_config['loss'],
+            batch_size_val,
+            layer_na_fill=0,
+            act_na_fill=0,
+            scaler=scaler
+        ).to_numpy()
+        y_val_pred_batch = batch_model.predict(x_val)
+        y_val_pred_batch = y_val_pred_batch.reshape(y_val_pred_batch.shape[0], )[0]
+        y_val_preds_batch.append(y_val_pred_batch * train_batch_numbers)
+
+        y_val_pred_setup = setup_model.predict(x_val)
+        y_val_pred_setup = y_val_pred_setup.reshape(y_val_pred_setup.shape[0], )[0]
+        y_val_preds_setup.append(y_val_pred_setup)
+
+    # define a function to calculate error
+    def cal_score(pred, real, absolute=False):
+        pred = np.array(pred).copy()
+        real = np.array(real).copy()
+        if absolute:
+            return abs((pred - real) / real)
+        else:
+            return (pred - real) / real
+
+    # x-axis
+    x = range(len(y_val_preds_batch))
+
+    # only use prediction from batch model and see error for no setup time
+    plt.scatter(x, cal_score(y_val_preds_batch, real_time_process_first_batchs))
+    plt.plot(x, [0.15] * len(x), c='r', linewidth=10)
+    plt.plot(x, [-0.15] * len(x), c='r', linewidth=10)
+    plt.title('trucated batch time error')
+    plt.show()
+
+    # see error of setup time model
+    plt.scatter(
+        x,
+        cal_score(
+            y_val_preds_setup,
+            np.array(real_time_batchs) - np.array(real_time_process_first_batchs)
+        )
+    )
+    plt.plot(x, [0.15] * len(x), c='r', linewidth=10)
+    plt.plot(x, [-0.15] * len(x), c='r', linewidth=10)
+    plt.title('setup time error')
+    plt.show()
+
+    # see error for true model time prediction, combine results from batch model and setup model
+    plt.scatter(
+        x,
+        cal_score(np.array(y_val_preds_setup) + np.array(y_val_preds_batch), real_time_start_ends)
+    )
+    plt.plot(x, [0.15] * len(x), c='r', linewidth=10)
+    plt.plot(x, [-0.15] * len(x), c='r', linewidth=10)
+    plt.title('real batch time error, added pred setup time')
+    plt.show()

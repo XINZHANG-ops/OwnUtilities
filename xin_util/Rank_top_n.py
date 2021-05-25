@@ -7,7 +7,8 @@
 
 
 def find_top_n_faster(vlist, top_n, method="min", show_progress=True):
-    print(f'finding top {top_n} values')
+    if show_progress:
+        print(f'finding top {top_n} values')
     top_n_value_dict = {0: vlist[0]}
     top_n_index_dict = {0: 0}
     current_extreme_value = vlist[0]
@@ -52,7 +53,8 @@ def find_top_n_faster(vlist, top_n, method="min", show_progress=True):
 
 
 def find_top_n(vlist, top_n, method="min", show_progress=True):
-    print(f'finding top {top_n} values')
+    if show_progress:
+        print(f'finding top {top_n} values')
     top_n_l = vlist[:top_n]
     top_n_index = list(range(top_n))
     if show_progress:
