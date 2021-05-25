@@ -227,14 +227,19 @@ class model_train_data:
                         callbacks=[time_callback],
                         verbose=False
                     )
-                    times_batch = np.array(time_callback.batch_times)[self.truncate_from:] * 1000
-                    times_epoch = np.array(time_callback.epoch_times)[self.truncate_from:] * 1000
+                    times_batch = np.array(time_callback.batch_times) * 1000
+                    times_epoch = np.array(time_callback.epoch_times) * 1000
                     batch_size_data_batch.extend(times_batch)
                     batch_size_data_epoch.extend(times_epoch)
 
+                batch_times_truncated = batch_size_data_batch[self.truncate_from:]
+                epoch_times_trancuted = batch_size_data_epoch[self.truncate_from:]
+                recovered_time = [np.median(batch_times_truncated)] * truncate_from + batch_times_truncated
+
                 model_config[f'batch_size_{batch_size}'] = {
-                    'batch_time': np.median(batch_size_data_batch),
-                    'epoch_time': np.median(batch_size_data_epoch)
+                    'batch_time': np.median(batch_times_truncated),
+                    'epoch_time': np.median(epoch_times_trancuted),
+                    'setup_time': np.sum(batch_size_data_batch) - sum(recovered_time)
                 }
             model_data.append(model_config)
         return model_data
@@ -244,6 +249,7 @@ class model_train_data:
     ):
         data_rows = []
         time_rows = []
+
         for model_i_data in model_data:
             layer_sizes = model_i_data['layer_sizes'] + [layer_na_fill] * layer_num_upper
             layer_sizes = layer_sizes[:layer_num_upper]
@@ -253,12 +259,15 @@ class model_train_data:
             optimizer = self.opt_mapping[model_i_data['optimizer']]
             loss = self.loss_mapping[model_i_data['loss']]
             batch_names = [k for k in model_i_data.keys() if k.startswith('batch_size')]
+
             for batch_name in batch_names:
                 batch_value = int(batch_name.split('_')[-1])
                 batch_time = model_i_data[batch_name]['batch_time']
                 epoch_time = model_i_data[batch_name]['epoch_time']
+                setup_time = model_i_data[batch_name]['setup_time']
                 data_rows.append(layer_sizes + activations + [optimizer, loss, batch_value])
-                time_rows.append([batch_time, epoch_time])
+                time_rows.append([batch_time, epoch_time, setup_time])
+
         layer_names = [f'layer_{i + 1}_size' for i in range(layer_num_upper)]
         act_names = [f'layer_{i + 1}_activation' for i in range(layer_num_upper)]
         if min_max_scaler:
@@ -267,13 +276,13 @@ class model_train_data:
             data_df = pd.DataFrame(
                 scaled_data, columns=layer_names + act_names + ['optimizer', 'loss', 'batch_size']
             )
-            time_df = pd.DataFrame(time_rows, columns=['batch_time', 'epoch_time'])
+            time_df = pd.DataFrame(time_rows, columns=['batch_time', 'epoch_time', 'setup_time'])
             return pd.concat([data_df, time_df], axis=1), scaler
         else:
             data_df = pd.DataFrame(
                 data_rows, columns=layer_names + act_names + ['optimizer', 'loss', 'batch_size']
             )
-            time_df = pd.DataFrame(time_rows, columns=['batch_time', 'epoch_time'])
+            time_df = pd.DataFrame(time_rows, columns=['batch_time', 'epoch_time', 'setup_time'])
             return pd.concat([data_df, time_df], axis=1), None
 
     def convert_model_data(
