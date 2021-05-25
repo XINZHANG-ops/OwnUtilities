@@ -410,15 +410,32 @@ class keras_dense_model_tune:
         n_trials=10,
         executions_per_trial=1,
         save_dir=".",
-        project_name='keras_model_tune'
+        project_name='keras_model_tune',
+        task_type='classification'
     ):
+        """
+
+        @param x_train:
+        @param y_train:
+        @param x_test:
+        @param y_test:
+        @param epochs:
+        @param batch_size:
+        @param n_trials:
+        @param executions_per_trial:
+        @param save_dir:
+        @param project_name:
+        @param task_type: string 'classification' or 'regression'
+        @return:
+        """
+
         if self.output_layer_size is None:
             self.output_layer_size = y_train.shape[1]
         if self.output_layer_act is None:
             self.output_layer_act = 'softmax'
         tuner = keras_Randomsearch(
             self.build_model,
-            objective='val_accuracy',
+            objective='val_accuracy' if task_type == 'classification' else 'val_loss',
             max_trials=n_trials,
             executions_per_trial=executions_per_trial,
             directory=save_dir,
@@ -447,7 +464,8 @@ class keras_dense_model_tune:
         n_trials=10,
         executions_per_trial=1,
         save_dir=".",
-        project_name='keras_model_tune'
+        project_name='keras_model_tune',
+        task_type='classification'
     ):
         if self.output_layer_size is None:
             self.output_layer_size = y_train.shape[1]
@@ -455,7 +473,7 @@ class keras_dense_model_tune:
             self.output_layer_act = 'softmax'
         tuner = keras_BayesianOptimization(
             self.build_model,
-            objective='val_accuracy',
+            objective='val_accuracy' if task_type == 'classification' else 'val_loss',
             max_trials=n_trials,
             executions_per_trial=executions_per_trial,
             directory=save_dir,
@@ -485,7 +503,8 @@ class keras_dense_model_tune:
         batch_size=32,
         executions_per_trial=1,
         save_dir=".",
-        project_name='keras_model_tune'
+        project_name='keras_model_tune',
+        task_type='classification'
     ):
         if self.output_layer_size is None:
             self.output_layer_size = y_train.shape[1]
@@ -493,7 +512,7 @@ class keras_dense_model_tune:
             self.output_layer_act = 'softmax'
         tuner = keras_Hyperband(
             self.build_model,
-            objective='val_accuracy',
+            objective='val_accuracy' if task_type == 'classification' else 'val_loss',
             max_epochs=max_epochs,
             factor=factor,
             executions_per_trial=executions_per_trial,
@@ -638,7 +657,8 @@ class keras_conv2d_model_tune:
         n_trials=10,
         executions_per_trial=1,
         save_dir=".",
-        project_name='keras_model_tune'
+        project_name='keras_model_tune',
+        task_type='classification'
     ):
         self.X_train = x_train.copy()
         if self.output_layer_size is None:
@@ -647,7 +667,7 @@ class keras_conv2d_model_tune:
             self.output_layer_act = 'softmax'
         tuner = keras_Randomsearch(
             self.build_model,
-            objective='val_accuracy',
+            objective='val_accuracy' if task_type == 'classification' else 'val_loss',
             max_trials=n_trials,
             executions_per_trial=executions_per_trial,
             directory=save_dir,
@@ -676,7 +696,8 @@ class keras_conv2d_model_tune:
         n_trials=10,
         executions_per_trial=1,
         save_dir=".",
-        project_name='keras_model_tune'
+        project_name='keras_model_tune',
+        task_type='classification'
     ):
         self.X_train = x_train.copy()
         if self.output_layer_size is None:
@@ -685,7 +706,7 @@ class keras_conv2d_model_tune:
             self.output_layer_act = 'softmax'
         tuner = keras_BayesianOptimization(
             self.build_model,
-            objective='val_accuracy',
+            objective='val_accuracy' if task_type == 'classification' else 'val_loss',
             max_trials=n_trials,
             executions_per_trial=executions_per_trial,
             directory=save_dir,
@@ -714,7 +735,8 @@ class keras_conv2d_model_tune:
         n_trials=10,
         executions_per_trial=1,
         save_dir=".",
-        project_name='keras_model_tune'
+        project_name='keras_model_tune',
+        task_type='classification'
     ):
         self.X_train = x_train.copy()
         if self.output_layer_size is None:
@@ -723,7 +745,7 @@ class keras_conv2d_model_tune:
             self.output_layer_act = 'softmax'
         tuner = keras_Hyperband(
             self.build_model,
-            objective='val_accuracy',
+            objective='val_accuracy' if task_type == 'classification' else 'val_loss',
             max_trials=n_trials,
             executions_per_trial=executions_per_trial,
             directory=save_dir,

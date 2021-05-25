@@ -177,12 +177,9 @@ class model_train_data:
             "sgd", "rmsprop", "adam", "adadelta", "adagrad", "adamax", "nadam", "ftrl"
         ]
         self.losses = ["mae", "mape", "mse", "msle", "poisson", "categorical_crossentropy"]
-        self.act_mapping = dict((act, index + 1)
-                                for index, act in enumerate(self.activation_fcts))
-        self.opt_mapping = dict((opt, index + 1)
-                                for index, opt in enumerate(self.optimizers))
-        self.loss_mapping = dict((loss, index + 1)
-                                 for index, loss in enumerate(self.losses))
+        self.act_mapping = dict((act, index + 1) for index, act in enumerate(self.activation_fcts))
+        self.opt_mapping = dict((opt, index + 1) for index, opt in enumerate(self.optimizers))
+        self.loss_mapping = dict((loss, index + 1) for index, loss in enumerate(self.losses))
 
     def get_train_data(self, progress=True):
         model_data = []
@@ -234,7 +231,9 @@ class model_train_data:
 
                 batch_times_truncated = batch_size_data_batch[self.truncate_from:]
                 epoch_times_trancuted = batch_size_data_epoch[self.truncate_from:]
-                recovered_time = [np.median(batch_times_truncated)] * self.truncate_from + batch_times_truncated
+                recovered_time = [
+                    np.median(batch_times_truncated)
+                ] * self.truncate_from + batch_times_truncated
 
                 model_config[f'batch_size_{batch_size}'] = {
                     'batch_time': np.median(batch_times_truncated),
