@@ -359,7 +359,7 @@ class keras_dense_model_tune:
             'relu', "sigmoid", "softmax", "softplus", "softsign", "tanh", "selu", "elu"
         ]
         self.optimizers_default = [
-            "SGD", "RMSprop", "Adam", "Adadelta", "Adagrad", "Adamax", "Nadam", "Ftrl"
+            "sgd", "rmsprop", "adam", "adadelta", "adagrad", "adamax", "nadam", "ftrl"
         ]
         self.losses_default = ["categorical_crossentropy"]
         if activations is not None:
@@ -378,7 +378,7 @@ class keras_dense_model_tune:
     def build_model(self, hp):
         model = keras.models.Sequential()
         for i in range(hp.Int('n_layers', min_value=self.n_layers_min, max_value=self.n_layers_max,
-                              step=self.n_layers_step, default=5)):
+                              step=self.n_layers_step)):
             model.add(
                 Dense(
                     units=hp.Int(
@@ -386,16 +386,14 @@ class keras_dense_model_tune:
                         min_value=self.layer_size_min,
                         max_value=self.layer_size_max,
                         step=self.layer_size_step,
-                        default=32
                     ),
-                    activation=hp.Choice(f'layer_{i}_act', values=self.activations, default='relu')
+                    activation=hp.Choice(f'layer_{i}_act', values=self.activations)
                 )
             )
         model.add(Dense(units=self.output_layer_size, activation=self.output_layer_act))
         model.compile(
-            optimizer=hp.Choice(f'optimizer', values=self.optimizers, default='SGD'),
-            loss=hp.Choice(f'loss', values=self.losses, default='categorical_crossentropy'),
-            metrics=["accuracy"]
+            optimizer=hp.Choice(f'optimizer', values=self.optimizers),
+            loss=hp.Choice(f'loss', values=self.losses),
         )
         return model
 
@@ -564,7 +562,7 @@ class keras_conv2d_model_tune:
             'relu', "sigmoid", "softmax", "softplus", "softsign", "tanh", "selu", "elu"
         ]
         self.optimizers_default = [
-            "SGD", "RMSprop", "Adam", "Adadelta", "Adagrad", "Adamax", "Nadam", "Ftrl"
+            "sgd", "rmsprop", "adam", "adadelta", "adagrad", "adamax", "nadam", "ftrl"
         ]
         self.losses_default = ["categorical_crossentropy"]
         if activations is not None:
@@ -606,7 +604,7 @@ class keras_conv2d_model_tune:
                     default=1
                 ),
                 input_shape=self.X_train.shape[1:],
-                activation=hp.Choice(f'input_conv_act', values=self.activations, default='relu')
+                activation=hp.Choice(f'input_conv_act', values=self.activations)
             )
         )
         model.add(MaxPool2D(pool_size=(2, 2)))
@@ -620,7 +618,6 @@ class keras_conv2d_model_tune:
                         min_value=self.conv_layer_size_min,
                         max_value=self.conv_layer_size_max,
                         step=self.conv_layer_size_step,
-                        default=32
                     ),
                     kernel_size=hp.Int(
                         f'conv_{i}_kernel_size',
@@ -634,7 +631,7 @@ class keras_conv2d_model_tune:
                         max_value=self.strides_max,
                         step=self.strides_step
                     ),
-                    activation=hp.Choice(f'conv_{i}_act', values=self.activations, default='relu')
+                    activation=hp.Choice(f'conv_{i}_act', values=self.activations)
                 )
             )
         model.add(Flatten())
@@ -642,7 +639,6 @@ class keras_conv2d_model_tune:
         model.compile(
             optimizer=hp.Choice(f'optimizer', values=self.optimizers),
             loss=hp.Choice(f'loss', values=self.losses),
-            metrics=["accuracy"]
         )
         return model
 
