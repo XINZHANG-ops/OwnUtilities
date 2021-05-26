@@ -165,7 +165,7 @@ class model_train_data:
         for info_dict in model_configs:
             d2 = copy.deepcopy(info_dict)
             self.model_configs.append(d2)
-        self.input_dims = input_dims if input_dims is not None else [10**i for i in range(1, 5)]
+        self.input_dims = input_dims if input_dims is not None else list(range(1, 1001))
         self.batch_sizes = batch_sizes if batch_sizes is not None else [2**i for i in range(1, 9)]
         self.epochs = epochs if epochs is not None else 10
         self.truncate_from = truncate_from if truncate_from is not None else 2
