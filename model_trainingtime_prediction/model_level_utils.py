@@ -144,6 +144,7 @@ class model_train_data:
     def __init__(
         self,
         model_configs,
+        input_dims=None,
         batch_sizes=None,
         epochs=None,
         truncate_from=None,
@@ -153,17 +154,18 @@ class model_train_data:
         """
 
         @param model_configs:
+        @param input_dims: input data number of features
         @param batch_sizes:
         @param epochs:
         @param truncate_from:
         @param trials:
-        @param batch_strategy: str: `random` or `all`, random will random one from batch_sizes for each model,
-        'all' will train for all batch_sizes in batch_sizes for each model
+        @param batch_strategy:
         """
         self.model_configs = []
         for info_dict in model_configs:
             d2 = copy.deepcopy(info_dict)
             self.model_configs.append(d2)
+        self.input_dims = input_dims if input_dims is not None else [10**i for i in range(1, 5)]
         self.batch_sizes = batch_sizes if batch_sizes is not None else [2**i for i in range(1, 9)]
         self.epochs = epochs if epochs is not None else 10
         self.truncate_from = truncate_from if truncate_from is not None else 2
@@ -202,17 +204,13 @@ class model_train_data:
                 batch_sizes = self.batch_sizes.copy()
             else:
                 batch_sizes = sample(self.batch_sizes, 1)
+            input_dim = sample(self.input_dims, 1)[0]
             for batch_size in batch_sizes:
                 batch_size_data_batch = []
                 batch_size_data_epoch = []
                 for _ in range(self.trials):
-                    try:
-                        input_shape = model.get_config()['layers'][0]['config']['units']
-                    except:
-                        input_shape = model.get_config(
-                        )['layers'][0]['config']['batch_input_shape'][1]
                     out_shape = model.get_config()['layers'][-1]['config']['units']
-                    x = np.ones((batch_size, input_shape), dtype=np.float32)
+                    x = np.ones((batch_size, input_dim), dtype=np.float32)
                     y = np.ones((batch_size, out_shape), dtype=np.float32)
 
                     time_callback = TimeHistory()
@@ -238,7 +236,8 @@ class model_train_data:
                 model_config[f'batch_size_{batch_size}'] = {
                     'batch_time': np.median(batch_times_truncated),
                     'epoch_time': np.median(epoch_times_trancuted),
-                    'setup_time': np.sum(batch_size_data_batch) - sum(recovered_time)
+                    'setup_time': np.sum(batch_size_data_batch) - sum(recovered_time),
+                    'input_dim': input_dim
                 }
             model_data.append(model_config)
         return model_data
@@ -264,7 +263,8 @@ class model_train_data:
                 batch_time = model_i_data[batch_name]['batch_time']
                 epoch_time = model_i_data[batch_name]['epoch_time']
                 setup_time = model_i_data[batch_name]['setup_time']
-                data_rows.append(layer_sizes + activations + [optimizer, loss, batch_value])
+                input_dim = model_i_data[batch_name]['input_dim']
+                data_rows.append(layer_sizes + activations + [optimizer, loss, batch_value, input_dim])
                 time_rows.append([batch_time, epoch_time, setup_time])
 
         layer_names = [f'layer_{i + 1}_size' for i in range(layer_num_upper)]
@@ -273,13 +273,13 @@ class model_train_data:
             scaler = MinMaxScaler()
             scaled_data = scaler.fit_transform(np.array(data_rows))
             data_df = pd.DataFrame(
-                scaled_data, columns=layer_names + act_names + ['optimizer', 'loss', 'batch_size']
+                scaled_data, columns=layer_names + act_names + ['optimizer', 'loss', 'batch_size', 'input_dim']
             )
             time_df = pd.DataFrame(time_rows, columns=['batch_time', 'epoch_time', 'setup_time'])
             return pd.concat([data_df, time_df], axis=1), scaler
         else:
             data_df = pd.DataFrame(
-                data_rows, columns=layer_names + act_names + ['optimizer', 'loss', 'batch_size']
+                data_rows, columns=layer_names + act_names + ['optimizer', 'loss', 'batch_size', 'input_dim']
             )
             time_df = pd.DataFrame(time_rows, columns=['batch_time', 'epoch_time', 'setup_time'])
             return pd.concat([data_df, time_df], axis=1), None
@@ -291,6 +291,7 @@ class model_train_data:
         optimizer,
         loss,
         batch_size,
+        input_dim,
         layer_na_fill=0,
         act_na_fill=0,
         scaler=None
@@ -303,17 +304,17 @@ class model_train_data:
         acts = acts[:layer_num_upper]
         optimizer = self.opt_mapping[optimizer]
         loss = self.loss_mapping[loss]
-        data = layer_sizes + acts + [optimizer, loss, batch_size]
+        data = layer_sizes + acts + [optimizer, loss, batch_size, input_dim]
         layer_names = [f'layer_{i + 1}_size' for i in range(layer_num_upper)]
         act_names = [f'layer_{i + 1}_activation' for i in range(layer_num_upper)]
         if scaler is None:
             return pd.DataFrame([data],
                                 columns=layer_names + act_names +
-                                ['optimizer', 'loss', 'batch_size'])
+                                ['optimizer', 'loss', 'batch_size', 'input_dim'])
         else:
             scaled_data = scaler.transform([data])
             return pd.DataFrame(
-                scaled_data, columns=layer_names + act_names + ['optimizer', 'loss', 'batch_size']
+                scaled_data, columns=layer_names + act_names + ['optimizer', 'loss', 'batch_size', 'input_dim']
             )
 
 
@@ -338,6 +339,7 @@ def demo():
     # train generated model configurations to get training time
     mtd = model_train_data(
         model_configs,
+        input_dims=[10**i for i in range(1, 5)],
         batch_sizes=[2**i for i in range(1, 9)],
         epochs=5,
         truncate_from=1,
@@ -480,6 +482,7 @@ def demo():
         # here we consider changeable data size and epoch
         batch_size_val = random.sample(mtd_val.batch_sizes, 1)[0]
         epochs_val = random.sample([2, 3, 4, 5], 1)[0]
+        data_dim_val = random.sample([10, 100, 1000, 10000], 1)[0]
         data_size_val = random.sample([5000, 10000, 15000, 1000], 1)[0]
         data_points_collect.append(data_size_val)
         batch_sizes_collect.append(batch_size_val)
@@ -492,12 +495,8 @@ def demo():
             loss=m_config['loss']
         )
 
-        try:
-            input_shape = model_val.get_config()['layers'][0]['config']['units']
-        except:
-            input_shape = model_val.get_config()['layers'][0]['config']['batch_input_shape'][1]
         out_shape = model_val.get_config()['layers'][-1]['config']['units']
-        x = np.ones((data_size_val, input_shape), dtype=np.float32)
+        x = np.ones((data_size_val, data_dim_val), dtype=np.float32)
         y = np.ones((data_size_val, out_shape), dtype=np.float32)
 
         time_callback = TimeHistory()
@@ -529,6 +528,7 @@ def demo():
             m_config['optimizer'],
             m_config['loss'],
             batch_size_val,
+            data_dim_val,
             layer_na_fill=0,
             act_na_fill=0,
             scaler=scaler
