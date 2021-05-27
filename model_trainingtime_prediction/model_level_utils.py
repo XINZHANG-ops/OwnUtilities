@@ -150,7 +150,7 @@ class model_train_data:
         truncate_from=None,
         trials=None,
         batch_strategy='random',
-        inpu_dim_strategy='same'
+        input_dim_strategy='same'
     ):
         """
 
@@ -160,7 +160,7 @@ class model_train_data:
         @param epochs:
         @param truncate_from:
         @param trials:
-        @param inpu_dim_strategy: 'random' or 'same', same will be same size as first layer size
+        @param input_dim_strategy: 'random' or 'same', same will be same size as first layer size
         """
         self.model_configs = []
         for info_dict in model_configs:
@@ -172,7 +172,7 @@ class model_train_data:
         self.truncate_from = truncate_from if truncate_from is not None else 2
         self.trials = trials if trials is not None else 5
         self.batch_strategy = batch_strategy
-        self.inpu_dim_strategy = inpu_dim_strategy
+        self.input_dim_strategy = input_dim_strategy
         self.activation_fcts = [
             'relu', "sigmoid", "softmax", "softplus", "softsign", "tanh", "selu", "elu",
             "exponential"
@@ -210,7 +210,7 @@ class model_train_data:
             for batch_size in batch_sizes:
                 batch_size_data_batch = []
                 batch_size_data_epoch = []
-                if self.inpu_dim_strategy == 'same':
+                if self.input_dim_strategy == 'same':
                     try:
                         input_shape = model.get_config()['layers'][0]['config']['units']
                     except:
@@ -252,7 +252,14 @@ class model_train_data:
         return model_data
 
     def convert_config_data(
-        self, model_data, layer_num_upper, layer_na_fill=0, act_na_fill=0, min_max_scaler=True
+        self,
+        model_data,
+        layer_num_upper,
+        layer_na_fill=0,
+        act_na_fill=0,
+        opt_dummy=True,
+        loss_dummy=True,
+        min_max_scaler=True
     ):
         data_rows = []
         time_rows = []
@@ -263,8 +270,14 @@ class model_train_data:
             activations = [self.act_mapping[i]
                            for i in model_i_data['activations']] + [act_na_fill] * layer_num_upper
             activations = activations[:layer_num_upper]
-            optimizer = self.opt_mapping[model_i_data['optimizer']]
-            loss = self.loss_mapping[model_i_data['loss']]
+            if opt_dummy:
+                optimizer = model_i_data['optimizer']
+            else:
+                optimizer = self.opt_mapping[model_i_data['optimizer']]
+            if loss_dummy:
+                loss = model_i_data['loss']
+            else:
+                loss = self.loss_mapping[model_i_data['loss']]
             batch_names = [k for k in model_i_data.keys() if k.startswith('batch_size')]
 
             for batch_name in batch_names:
@@ -280,22 +293,32 @@ class model_train_data:
 
         layer_names = [f'layer_{i + 1}_size' for i in range(layer_num_upper)]
         act_names = [f'layer_{i + 1}_activation' for i in range(layer_num_upper)]
+        temp_df = pd.DataFrame(
+            data_rows,
+            columns=layer_names + act_names + ['optimizer', 'loss', 'batch_size', 'input_dim']
+        )
+        if opt_dummy:
+            first_row = dict(temp_df.iloc[0])
+            for opt in self.optimizers:
+                first_row['optimizer'] = opt
+                temp_df = temp_df.append(first_row, ignore_index=True)
+            temp_df = pd.get_dummies(temp_df, columns=['optimizer'])
+            temp_df = temp_df.drop(temp_df.index.tolist()[-len(self.optimizers):])
+        if loss_dummy:
+            first_row = dict(temp_df.iloc[0])
+            for los in self.losses:
+                first_row['loss'] = los
+                temp_df = temp_df.append(first_row, ignore_index=True)
+            temp_df = pd.get_dummies(temp_df, columns=['loss'])
+            temp_df = temp_df.drop(temp_df.index.tolist()[-len(self.losses):])
+        time_df = pd.DataFrame(time_rows, columns=['batch_time', 'epoch_time', 'setup_time'])
         if min_max_scaler:
             scaler = MinMaxScaler()
-            scaled_data = scaler.fit_transform(np.array(data_rows))
-            data_df = pd.DataFrame(
-                scaled_data,
-                columns=layer_names + act_names + ['optimizer', 'loss', 'batch_size', 'input_dim']
-            )
-            time_df = pd.DataFrame(time_rows, columns=['batch_time', 'epoch_time', 'setup_time'])
-            return pd.concat([data_df, time_df], axis=1), scaler
+            scaled_data = scaler.fit_transform(temp_df.to_numpy())
+            temp_df = pd.DataFrame(scaled_data, columns=temp_df.columns)
+            return pd.concat([temp_df, time_df], axis=1), scaler
         else:
-            data_df = pd.DataFrame(
-                data_rows,
-                columns=layer_names + act_names + ['optimizer', 'loss', 'batch_size', 'input_dim']
-            )
-            time_df = pd.DataFrame(time_rows, columns=['batch_time', 'epoch_time', 'setup_time'])
-            return pd.concat([data_df, time_df], axis=1), None
+            return pd.concat([temp_df, time_df], axis=1), None
 
     def convert_model_data(
         self,
@@ -307,7 +330,9 @@ class model_train_data:
         input_dim=None,
         layer_na_fill=0,
         act_na_fill=0,
-        scaler=None
+        scaler=None,
+        opt_dummy=True,
+        loss_dummy=True,
     ):
         layer_sizes, acts = gen_nn.get_dense_model_features(keras_model)
         if input_dim is None:
@@ -317,21 +342,40 @@ class model_train_data:
         acts = [self.act_mapping[i] for i in acts]
         acts = acts + [act_na_fill] * layer_num_upper
         acts = acts[:layer_num_upper]
-        optimizer = self.opt_mapping[optimizer]
-        loss = self.loss_mapping[loss]
+        if opt_dummy:
+            optimizer = optimizer.lower()
+        else:
+            optimizer = self.opt_mapping[optimizer.lower()]
+        if loss_dummy:
+            loss = loss.lower()
+        else:
+            loss = self.loss_mapping[loss.lower()]
         data = layer_sizes + acts + [optimizer, loss, batch_size, input_dim]
         layer_names = [f'layer_{i + 1}_size' for i in range(layer_num_upper)]
         act_names = [f'layer_{i + 1}_activation' for i in range(layer_num_upper)]
+        temp_df = pd.DataFrame([data],
+                               columns=layer_names + act_names +
+                               ['optimizer', 'loss', 'batch_size', 'input_dim'])
+        if opt_dummy:
+            first_row = dict(temp_df.iloc[0])
+            for opt in self.optimizers:
+                first_row['optimizer'] = opt
+                temp_df = temp_df.append(first_row, ignore_index=True)
+            temp_df = pd.get_dummies(temp_df, columns=['optimizer'])
+            temp_df = temp_df.drop(temp_df.index.tolist()[-len(self.optimizers):])
+        if loss_dummy:
+            first_row = dict(temp_df.iloc[0])
+            for los in self.losses:
+                first_row['loss'] = los
+                temp_df = temp_df.append(first_row, ignore_index=True)
+            temp_df = pd.get_dummies(temp_df, columns=['loss'])
+            temp_df = temp_df.drop(temp_df.index.tolist()[-len(self.losses):])
+
         if scaler is None:
-            return pd.DataFrame([data],
-                                columns=layer_names + act_names +
-                                ['optimizer', 'loss', 'batch_size', 'input_dim'])
+            return temp_df
         else:
-            scaled_data = scaler.transform([data])
-            return pd.DataFrame(
-                scaled_data,
-                columns=layer_names + act_names + ['optimizer', 'loss', 'batch_size', 'input_dim']
-            )
+            scaled_data = scaler.transform(temp_df.to_numpy())
+            return pd.DataFrame(scaled_data, columns=temp_df.columns)
 
 
 def demo():
