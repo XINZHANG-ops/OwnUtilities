@@ -15,6 +15,12 @@ from random import sample
 from sklearn.preprocessing import MinMaxScaler
 import copy
 
+activation_fcts = [
+    'relu', "sigmoid", "softmax", "softplus", "softsign", "tanh", "selu", "elu", "exponential"
+]
+optimizers = ["sgd", "rmsprop", "adam", "adadelta", "adagrad", "adamax", "nadam", "ftrl"]
+losses = ["mae", "mape", "mse", "msle", "poisson", "categorical_crossentropy"]
+
 
 class TimeHistory(keras.callbacks.Callback):
     def on_train_begin(self, logs={}):
@@ -67,14 +73,9 @@ class gen_nn:
         self.activation_pick = activation
         self.optimizer_pick = optimizer
         self.loss_pick = loss
-        self.activation_fcts = [
-            'relu', "sigmoid", "softmax", "softplus", "softsign", "tanh", "selu", "elu",
-            "exponential"
-        ]
-        self.optimizers = [
-            "sgd", "rmsprop", "adam", "adadelta", "adagrad", "adamax", "nadam", "ftrl"
-        ]
-        self.losses = ["mae", "mape", "mse", "msle", "poisson", "categorical_crossentropy"]
+        self.activation_fcts = activation_fcts
+        self.optimizers = optimizers
+        self.losses = losses
 
     @staticmethod
     def nothing(x):
@@ -173,14 +174,9 @@ class model_train_data:
         self.trials = trials if trials is not None else 5
         self.batch_strategy = batch_strategy
         self.input_dim_strategy = input_dim_strategy
-        self.activation_fcts = [
-            'relu', "sigmoid", "softmax", "softplus", "softsign", "tanh", "selu", "elu",
-            "exponential"
-        ]
-        self.optimizers = [
-            "sgd", "rmsprop", "adam", "adadelta", "adagrad", "adamax", "nadam", "ftrl"
-        ]
-        self.losses = ["mae", "mape", "mse", "msle", "poisson", "categorical_crossentropy"]
+        self.activation_fcts = activation_fcts
+        self.optimizers = optimizers
+        self.losses = losses
         self.act_mapping = dict((act, index + 1) for index, act in enumerate(self.activation_fcts))
         self.opt_mapping = dict((opt, index + 1) for index, opt in enumerate(self.optimizers))
         self.loss_mapping = dict((loss, index + 1) for index, loss in enumerate(self.losses))
