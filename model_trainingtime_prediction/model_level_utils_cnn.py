@@ -393,7 +393,7 @@ class gen_cnn2d:
         return model_configs
 
 
-class model_train_data:
+class cnn2d_model_train_data:
     def __init__(
         self, model_configs, batch_sizes=None, epochs=None, truncate_from=None, trials=None
     ):
