@@ -472,7 +472,7 @@ class cnn2d_model_train_data:
 
         model_data_dfs = []
         time_rows = []
-        for model_info in model_data:
+        for model_info in tqdm(model_data):
             data_rows = []
             kwargs_list = model_info[0]
             layer_orders = model_info[1]
