@@ -360,7 +360,7 @@ class gen_cnn2d:
             losses=self.loss_pick
         )
         kwargs_list, layer_orders, image_shape_list = mb.generateRandomModelConfigList(layer_orders)
-        return kwargs_list, layer_orders, (input_shape, input_shape, input_channels)
+        return kwargs_list, layer_orders, (int(input_shape), int(input_shape), int(input_channels))
 
     @staticmethod
     def build_cnn2d_model(kwargs_list, layer_orders):
