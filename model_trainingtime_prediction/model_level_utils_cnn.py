@@ -414,7 +414,7 @@ class cnn2d_model_train_data:
         if progress:
             loop_fun = tqdm
         else:
-            loop_fun = gen_nn.nothing
+            loop_fun = gen_cnn2d.nothing
         for info_list in self.model_configs:
             model_configs.append(info_list.copy())
         for model_config_list in loop_fun(model_configs):
