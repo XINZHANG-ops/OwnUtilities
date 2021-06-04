@@ -250,10 +250,10 @@ class CnnRules:
     def __init__(
         self,
         conv_layer_num_lower=1,
-        conv_layer_num_upper=10,
+        conv_layer_num_upper=11,
         max_pooling_prob=0.5,
         dense_layer_num_lower=1,
-        dense_layer_num_upper=5
+        dense_layer_num_upper=6
     ):
         self.conv_layer_num_lower = conv_layer_num_lower  # Rule: No Convolutional Layer After the First Dense Layer
         self.conv_layer_num_upper = conv_layer_num_upper
@@ -289,13 +289,13 @@ class gen_cnn2d:
     def __init__(
         self,
         input_shape_lower=8,
-        input_shape_upper=256,
+        input_shape_upper=29,
         conv_layer_num_lower=1,
-        conv_layer_num_upper=50,
+        conv_layer_num_upper=51,
         filter_lower=1,
         filter_upper=101,
         dense_layer_num_lower=1,
-        dense_layer_num_upper=5,
+        dense_layer_num_upper=6,
         dense_size_lower=1,
         dense_size_upper=1001,
         max_pooling_prob=.5,
@@ -470,6 +470,27 @@ class cnn2d_model_train_data:
         time_columns = ['batch_time', 'epoch_time', 'setup_time']
         feature_layer_types = ['Conv2D', 'MaxPooling2D', 'Dense']
 
+        row_num = max([
+            len(activation_fcts),
+            len(optimizers),
+            len(losses),
+            len(paddings),
+            len(feature_layer_types)
+        ])
+        pos_dict = dict((i, feature_columns.index(i)) for i in feature_columns)
+        values_dict = {
+            'activation': activation_fcts,
+            'optimizer': optimizers,
+            'loss': losses,
+            'padding': paddings,
+            'layer_type': feature_layer_types
+        }
+        empty_rows = [[None] * len(feature_columns)] * row_num
+        empty_rows = [i[:] for i in empty_rows]  # break connection for lists
+        for v_type, v_list in values_dict.items():
+            for index, value in enumerate(v_list):
+                empty_rows[index][pos_dict[v_type]] = value
+
         model_data_dfs = []
         time_rows = []
         for model_info in tqdm(model_data):
@@ -507,37 +528,18 @@ class cnn2d_model_train_data:
             time_rows.append([
                 train_times['batch_time'], train_times['epoch_time'], train_times['setup_time']
             ])
+            data_rows.extend(empty_rows)
             temp_df = pd.DataFrame(data_rows, columns=feature_columns)
 
-            first_row = dict(temp_df.iloc[0])
-
-            for opt in optimizers:
-                first_row['optimizer'] = opt
-                temp_df = temp_df.append(first_row, ignore_index=True)
-            for lp in feature_layer_types:
-                first_row['layer_type'] = lp
-                temp_df = temp_df.append(first_row, ignore_index=True)
-            for _pad in paddings:
-                first_row['padding'] = _pad
-                temp_df = temp_df.append(first_row, ignore_index=True)
-            for _act in activation_fcts:
-                first_row['activation'] = _act
-                temp_df = temp_df.append(first_row, ignore_index=True)
-            for _los in losses:
-                first_row['loss'] = _los
-                temp_df = temp_df.append(first_row, ignore_index=True)
-
             temp_df = pd.get_dummies(temp_df)
-            temp_df = temp_df.drop(
-                temp_df.index.tolist()
-                [-len(optimizers + feature_layer_types + paddings + activation_fcts + losses):]
-            )
+            temp_df = temp_df.drop(temp_df.index.tolist()[-len(empty_rows):])
 
-            fill_empty_rows = dict((col_n, 0) for col_n in temp_df.columns)
-            current_rows = temp_df.shape[0]
-            compensate_count = max_layer_num - current_rows
-            for _ in range(max([0, compensate_count])):
-                temp_df = temp_df.append(fill_empty_rows, ignore_index=True)
+            columns_count = len(temp_df.columns)
+            zero_rows = np.zeros((max_layer_num, columns_count))
+            temp_array = temp_df.to_numpy()
+            temp_array = np.append(temp_array, zero_rows, 0)
+            temp_array = temp_array[:max_layer_num, ]
+            temp_df = pd.DataFrame(temp_array, columns=temp_df.columns)
             model_data_dfs.append(temp_df)
         time_df = pd.DataFrame(time_rows, columns=time_columns)
         if min_max_scaler:
