@@ -3,7 +3,7 @@ import zipfile
 from tqdm import tqdm
 
 
-def zip(path_to_file, directory_to_zip_to):
+def zip_file(path_to_file, directory_to_zip_to):
     zipf = zipfile.ZipFile(directory_to_zip_to, 'w', zipfile.ZIP_DEFLATED)
     for root, dirs, files in os.walk(path_to_file):
         for file in tqdm(files):
@@ -11,7 +11,7 @@ def zip(path_to_file, directory_to_zip_to):
     zipf.close()
 
 
-def unzip(path_to_zip_file, directory_to_extract_to, delete_zip_after_unzipping=True):
+def unzip_file(path_to_zip_file, directory_to_extract_to, delete_zip_after_unzipping=True):
     with zipfile.ZipFile(path_to_zip_file, 'r') as zip_ref:
         # zip_ref.extractall(directory_to_extract_to)
         for member in tqdm(zip_ref.infolist(), desc='Extracting '):
