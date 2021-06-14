@@ -5,7 +5,7 @@ import pandas as pd
 
 
 class Categorical_Scatter:
-    def __init__(self, X, y=None):
+    def __init__(self, X, y=None, labels=None):
         """
 
         @param X: array, rows are samples, columns are features, 3 features at most
@@ -16,9 +16,10 @@ class Categorical_Scatter:
             self.y = np.ones(X.shape[0])
         else:
             self.y = y
+        self.labels = labels
 
     @staticmethod
-    def plot3d_plotly(X, y, marker_size=7, width=500, height=500):
+    def plot3d_plotly(X, y, labels=None, marker_size=7, width=500, height=500):
         # x has 3 columns, y indicates the labels
         import random
         random.seed(0)
@@ -32,32 +33,33 @@ class Categorical_Scatter:
             'y': X[y == unique_labels[0], 1],
             'z': X[y == unique_labels[0], 2]
         }
+        label0_indeces = [idx for idx, l in enumerate(y) if l == unique_labels[0]]
         df_0 = pd.DataFrame(df_0)
         fig = go.Figure(
             data=go.Scatter3d(
                 x=df_0['x'],
                 y=df_0['y'],
                 z=df_0['z'],
-                mode='markers',
+                text=labels if labels is None else [labels[i] for i in label0_indeces],
+                mode='markers' if labels is None else 'markers+text',
                 name=f"type {unique_labels[0]}",
-                marker=dict(
-                    size=marker_size,
-                    color=color,
-                    colorscale='Viridis',
-                )
+                marker=dict(size=marker_size, color=color, colorscale='Viridis')
             )
         )
+
         for label in unique_labels[1:]:
             r = lambda: random.randint(0, 255)
             color = '#%02X%02X%02X' % (r(), r(), r())
             df = {'x': X[y == label, 0], 'y': X[y == label, 1], 'z': X[y == label, 2]}
+            label_indeces = [idx for idx, l in enumerate(y) if l == label]
             df = pd.DataFrame(df)
             fig.add_trace(
                 go.Scatter3d(
                     x=df['x'],
                     y=df['y'],
                     z=df['z'],
-                    mode='markers',
+                    text=labels if labels is None else [str(labels[i]) for i in label_indeces],
+                    mode='markers' if labels is None else 'markers+text',
                     name=f"type {label}",
                     marker=dict(
                         size=marker_size,
@@ -83,7 +85,7 @@ class Categorical_Scatter:
         fig.show()
 
     @staticmethod
-    def plot2d_plotly(X, y, marker_size=7, width=500, height=500):
+    def plot2d_plotly(X, y, labels=None, marker_size=7, width=500, height=500):
         import random
         random.seed(0)
         r = lambda: random.randint(0, 255)
@@ -91,13 +93,15 @@ class Categorical_Scatter:
         y = np.array(y)
         fig = go.Figure()
         for label in unique_labels:
+            label_indeces = [idx for idx, l in enumerate(y) if l == label]
             color = '#%02X%02X%02X' % (r(), r(), r())
             df = {'x': X[y == label, 0], 'y': X[y == label, 1]}
             fig.add_trace(
                 go.Scatter(
                     x=df['x'],
                     y=df['y'],
-                    mode='markers',
+                    text=labels if labels is None else [str(labels[i]) for i in label_indeces],
+                    mode='markers' if labels is None else 'markers+text',
                     name=f"type {label}",
                     marker=dict(
                         size=marker_size,
@@ -126,11 +130,11 @@ class Categorical_Scatter:
         n_sample, n_dim = self.X.shape
         if n_dim == 2:
             Categorical_Scatter.plot2d_plotly(
-                self.X, self.y, marker_size=marker_size, width=width, height=height
+                self.X, self.y, self.labels, marker_size=marker_size, width=width, height=height
             )
         elif n_dim == 3:
             Categorical_Scatter.plot3d_plotly(
-                self.X, self.y, marker_size=marker_size, width=width, height=height
+                self.X, self.y, self.labels, marker_size=marker_size, width=width, height=height
             )
         else:
             raise TestFailed('X must be 2 or 3 dimensions')
@@ -164,8 +168,10 @@ def demo():
         return X_origin, y
 
     # generate 3d data and plot
-    X_origin, y = generate_spheres(dim=3, radiuses=(1, 2, 3, 4), n_sample_each=300)
-    cs = Categorical_Scatter(X_origin, y)
+    X_origin, y = generate_spheres(dim=3, radiuses=(1, 2, 3, 4), n_sample_each=30)
+
+    # the second y are annotations on the plot, could be None
+    cs = Categorical_Scatter(X_origin, y, y)
     cs.plot()
 
     # use kernel pca project to 2d
@@ -173,5 +179,6 @@ def demo():
     kernelpca = decomposition.KernelPCA(n_components=2, kernel='rbf')
     kernelpca.fit(X_origin)
     X = kernelpca.transform(X_origin)
-    cs = Categorical_Scatter(X, y)
+    # the second y are annotations on the plot, could be None
+    cs = Categorical_Scatter(X, y, y)
     cs.plot()
