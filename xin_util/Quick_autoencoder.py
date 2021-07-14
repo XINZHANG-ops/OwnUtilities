@@ -243,16 +243,15 @@ def demo():
         return X_origin, y
 
     # generate 3d data and plot
-    X_origin, y = generate_spheres(dim=25, radiuses=(1, 2, 3, 4), n_sample_each=5000)
     set_seed_ae(
         1,
         X_origin,
         y,
         3,
         64,
-        first_layer_size=300,
+        first_layer_size=500,
         latent_dim=3,
-        encoder_layer_num=4,
+        encoder_layer_num=5,
         optimizer='sgd'
     )
     set_seed_vae(1, X_origin.reshape((X_origin.shape[0], 5, 5, 1)), y, 1, 256)
