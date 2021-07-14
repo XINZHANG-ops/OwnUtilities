@@ -18,7 +18,9 @@ def euclidean_df_array_faster(data_df, vector_array, split_rows=None):
     :param split_rows: how many rows per iter, in order to manage memory use
     :return:
     """
-    total_rows = data_df.shape[0]
+    df = data_df.copy()
+    df.reset_index(drop=True, inplace=True)
+    total_rows = df.shape[0]
     if split_rows is None:
         split_rows = total_rows
     split_indices = list(
@@ -31,7 +33,7 @@ def euclidean_df_array_faster(data_df, vector_array, split_rows=None):
 
     all_distance = []
     for start, end in tqdm(split_indices):
-        partial_feature = data_df.iloc[data_df.index.tolist()[start:end]].to_numpy()
+        partial_feature = df.iloc[df.index.tolist()[start:end]].to_numpy()
         M = partial_feature - vector_array
         all_distance.extend(list(np.sqrt(np.sum(M**2, axis=1))))
     return all_distance
@@ -44,10 +46,11 @@ def euclidean_df_array(data_df, vector_array):
     :param vector_array: array where shape = (data_df.shape[1],)
     :return:
     """
-
+    df = data_df.copy()
+    df.reset_index(drop=True, inplace=True)
     all_distance = []
-    for index in tqdm(data_df.index.tolist()):
-        vector = data_df.iloc[index].to_numpy()
+    for index in tqdm(df.index.tolist()):
+        vector = df.iloc[index].to_numpy()
         all_distance.append(np.linalg.norm(vector - vector_array))
     return all_distance
 

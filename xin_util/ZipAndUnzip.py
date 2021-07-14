@@ -11,7 +11,7 @@ def zip_file(path_to_file, directory_to_zip_to):
     zipf.close()
 
 
-def unzip_file(path_to_zip_file, directory_to_extract_to, delete_zip_after_unzipping=True):
+def unzip_file(path_to_zip_file, directory_to_extract_to, delete_zip_after_unzipping=False):
     with zipfile.ZipFile(path_to_zip_file, 'r') as zip_ref:
         # zip_ref.extractall(directory_to_extract_to)
         for member in tqdm(zip_ref.infolist(), desc='Extracting '):
