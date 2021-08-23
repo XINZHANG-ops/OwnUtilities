@@ -374,6 +374,7 @@ class model_train_data:
             scaled_data = scaler.transform(temp_df.to_numpy())
             return pd.DataFrame(scaled_data, columns=temp_df.columns)
 
+
 class convert_dense_data:
     def __init__(self):
         self.optimizers = optimizers
@@ -410,7 +411,7 @@ class convert_dense_data:
             if layer['class_name'] == 'Dense'
         ])
 
-    def convert_model_config(self, model_config_dense, data_type='Unit', min_max_scaler=True):
+    def convert_model_config(self, model_config_dense, data_type='Units', min_max_scaler=True):
         """
 
         @param model_config_dense:
