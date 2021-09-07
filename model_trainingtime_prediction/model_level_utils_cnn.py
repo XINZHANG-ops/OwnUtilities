@@ -9,8 +9,8 @@ import tensorflow.keras as keras
 import pandas as pd
 from tqdm import tqdm
 import numpy as np
-from keras.models import Sequential
-from keras.layers import Dense, Conv2D, Flatten, MaxPooling2D, Dropout
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Conv2D, Flatten, MaxPooling2D, Dropout
 from random import sample
 from sklearn.preprocessing import MinMaxScaler
 import random

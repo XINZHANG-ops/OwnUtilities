@@ -1,7 +1,7 @@
 """
 ****************************************
  * @author: Xin Zhang
- * Date: 8/22/21
+ * Date: 8/26/21
 ****************************************
 """
 """
@@ -12,10 +12,11 @@
 """
 import time
 import tensorflow.keras as keras
+import pandas as pd
 from tqdm import tqdm
 import numpy as np
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, SimpleRNN, LSTM, GRU
+from tensorflow.keras.layers import Dense, SimpleRNN, LSTM, GRU, Bidirectional
 from random import sample
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import OneHotEncoder
@@ -62,7 +63,7 @@ class TimeHistory(keras.callbacks.Callback):
         self.train_end_time = np.array(self.train_end_time) - self.train_start_time
 
 
-class gen_rnn:
+class gen_bidirectional_rnn:
     def __init__(
         self,
         rnn_layers_num_lower=1,
@@ -114,10 +115,12 @@ class gen_rnn:
         for index, size in enumerate(rnn_layer_sizes + dense_layer_sizes):
             if index < len(rnn_layer_sizes) - 1:
                 model.add(
-                    rnn_layer(units=size, activation=activations[index], return_sequences=True)
+                    Bidirectional(
+                        rnn_layer(units=size, activation=activations[index], return_sequences=True)
+                    )
                 )
             elif index == len(rnn_layer_sizes) - 1:
-                model.add(rnn_layer(units=size, activation=activations[index]))
+                model.add(Bidirectional(rnn_layer(units=size, activation=activations[index])))
             else:
                 model.add(Dense(units=size, activation=activations[index]))
         model.compile(loss=loss, optimizer=optimizer, metrics=['accuracy'])
@@ -127,12 +130,20 @@ class gen_rnn:
     def get_RNN_model_features(keras_model):
         layers = [
             layer_info for layer_info in keras_model.get_config()['layers']
-            if layer_info['class_name'] == 'SimpleRNN' or layer_info['class_name'] == 'LSTM'
-            or layer_info['class_name'] == 'GRU' or layer_info['class_name'] == 'Dense'
+            if layer_info['class_name'] == 'Bidirectional' or layer_info['class_name'] == 'Dense'
         ]
-        layer_sizes = [l['config']['units'] for l in layers]
-        acts = [l['config']['activation'].lower() for l in layers]
-        layer_Type = [l['class_name'] for l in layers]
+        layer_sizes = []
+        acts = []
+        layer_Type = []
+        for l in layers:
+            if l['class_name'] == 'Dense':
+                layer_sizes.append(l['config']['units'])
+                acts.append(l['config']['activation'])
+                layer_Type.append(l['class_name'])
+            else:
+                layer_sizes.append(l['config']['layer']['config']['units'])
+                acts.append(l['config']['layer']['config']['activation'])
+                layer_Type.append(l['config']['layer']['class_name'])
         return layer_sizes, acts, layer_Type
 
     def generate_model(self):
@@ -166,7 +177,7 @@ class gen_rnn:
             rnn_layer = self.rnn_layer_type_pick
 
         return {
-            # 'model': gen_rnn.build_RNN_model(rnn_layer, list(rnn_layer_sizes), list(dense_layer_sizes), activations, optimizer, loss),
+            #'model': gen_bidirectional_rnn.build_RNN_model(rnn_layer, list(rnn_layer_sizes), list(dense_layer_sizes), activations, optimizer, loss),
             'rnn_layer_sizes': [int(i) for i in rnn_layer_sizes],
             'dense_layer_sizes': [int(i) for i in dense_layer_sizes],
             'activations': list(activations),
@@ -180,10 +191,10 @@ class gen_rnn:
         if progress:
             loop_fun = tqdm
         else:
-            loop_fun = gen_rnn.nothing
+            loop_fun = gen_bidirectional_rnn.nothing
         for i in loop_fun(range(num_model_data)):
             data = self.generate_model()
-            # del data['model']
+            #del data['model']
             model_configs.append(data)
         return model_configs
 
@@ -232,12 +243,12 @@ class model_train_data:
         if progress:
             loop_fun = tqdm
         else:
-            loop_fun = gen_nn.nothing
+            loop_fun = gen_bidirectional_rnn.nothing
         for info_dict in self.model_configs:
             d2 = copy.deepcopy(info_dict)
             model_configs.append(d2)
         for model_config in loop_fun(model_configs):
-            model = gen_rnn.build_RNN_model(
+            model = gen_bidirectional_rnn.build_RNN_model(
                 layer_type=model_config['rnn_type'],
                 rnn_layer_sizes=model_config['rnn_layer_sizes'],
                 dense_layer_sizes=model_config['dense_layer_sizes'],
@@ -252,7 +263,8 @@ class model_train_data:
                 batch_size_data_epoch = []
                 if self.input_dim_strategy == 'same':
                     try:
-                        input_shape = model.get_config()['layers'][0]['config']['units']
+                        input_shape = model.get_config(
+                        )['layers'][0]['config']['layer']['config']['units']
                     except:
                         input_shape = model.get_config(
                         )['layers'][0]['config']['batch_input_shape'][2]
@@ -291,7 +303,7 @@ class model_train_data:
         return model_data
 
 
-class convert_rnn_data:
+class convert_bidirectional_rnn_data:
     def __init__(self):
         self.optimizers = optimizers
         self.rnn_layer_types = rnn_layer_types
@@ -313,22 +325,25 @@ class convert_rnn_data:
     @staticmethod
     def get_rnn_type(model):
         return [
-            i['class_name'] for i in model.get_config()['layers'] if i['class_name'] == 'SimpleRNN'
-            or i['class_name'] == 'LSTM' or i['class_name'] == 'GRU'
+            i['config']['layer']['class_name'] for i in model.get_config()['layers']
+            if i['class_name'] == 'Bidirectional'
         ][0]
 
     @staticmethod
-    def get_units_sum_rnn_keras(dense_model_obj):
-        return sum([
-            layer['config']['units'] for layer in dense_model_obj.get_config()['layers']
-            if layer['class_name'] == 'SimpleRNN' or layer['class_name'] == 'LSTM'
-            or layer['class_name'] == 'GRU'
-        ])
+    def get_units_sum_rnn_keras(model_obj):
+        layers = [
+            layer_info for layer_info in model_obj.get_config()['layers']
+            if layer_info['class_name'] == 'Bidirectional'
+        ]
+        layer_sizes = []
+        for l in layers:
+            layer_sizes.append(l['config']['layer']['config']['units'])
+        return sum(layer_sizes)
 
     @staticmethod
-    def get_units_sum_dense_keras(dense_model_obj):
+    def get_units_sum_dense_keras(model_obj):
         return sum([
-            layer['config']['units'] for layer in dense_model_obj.get_config()['layers']
+            layer['config']['units'] for layer in model_obj.get_config()['layers']
             if layer['class_name'] == 'Dense'
         ])
 
@@ -379,9 +394,9 @@ class convert_rnn_data:
     def convert_model_keras(
         self, rnn_model_obj, optimizer, batch_size, data_type='Unit', scaler=None
     ):
-        rnn_type = convert_rnn_data.get_rnn_type(rnn_model_obj)
-        dense_unit_sum = convert_rnn_data.get_units_sum_dense_keras(rnn_model_obj)
-        rnn_unit_sum = convert_rnn_data.get_units_sum_rnn_keras(rnn_model_obj)
+        rnn_type = convert_bidirectional_rnn_data.get_rnn_type(rnn_model_obj)
+        dense_unit_sum = convert_bidirectional_rnn_data.get_units_sum_dense_keras(rnn_model_obj)
+        rnn_unit_sum = convert_bidirectional_rnn_data.get_units_sum_rnn_keras(rnn_model_obj)
 
         optimizer_onehot = list(self.opt_enc.transform([[optimizer]]).toarray()[0])
         rnn_type_onehot = list(self.rnn_enc.transform([[rnn_type]]).toarray()[0])
@@ -393,61 +408,3 @@ class convert_rnn_data:
             return scaled_data
         else:
             return layer_data
-
-
-def demo():
-    # Note that RNN models not use cuDNN kernels since it doesn't meet the criteria. It will use a generic GPU kernel as fallback when running on GPU.
-    g = gen_rnn()
-    model_configs = g.generate_model_configs(500)
-    mtd = model_train_data(model_configs)
-    model_data = mtd.get_train_data()
-    crd = convert_rnn_data()
-    rnn_data, times_data, scaler = crd.convert_model_config(model_data)
-
-    from sklearn.model_selection import train_test_split
-    from sklearn.preprocessing import MinMaxScaler
-    from tensorflow import keras
-    from tensorflow.keras.layers import Dense
-    from sklearn.metrics import mean_squared_error
-    import matplotlib.pyplot as plt
-
-    x_train, x_test, y_train, y_test = train_test_split(
-        scaler_rnn_data, np.array(times_data), test_size=0.1, random_state=0
-    )
-
-    batch_model = keras.Sequential()
-    batch_model.add(Dense(200, kernel_initializer='normal', activation='relu'))
-    batch_model.add(Dense(200, kernel_initializer='normal', activation='relu'))
-    batch_model.add(Dense(200, kernel_initializer='normal', activation='relu'))
-    batch_model.add(Dense(200, kernel_initializer='normal', activation='relu'))
-    batch_model.add(Dense(200, kernel_initializer='normal', activation='relu'))
-    batch_model.add(Dense(1, kernel_initializer='normal'))
-
-    batch_model.compile(loss='mean_squared_error', optimizer='adam')
-
-    history_batch = batch_model.fit(
-        x_train, y_train, batch_size=16, epochs=15, validation_data=(x_test, y_test), verbose=True
-    )
-    batch_y_pred = batch_model.predict(x_test)
-    batch_y_pred = batch_y_pred.reshape(batch_y_pred.shape[0], )
-    plt.scatter(y_test, batch_y_pred)
-    plt.scatter(y_test, y_test, c='r')
-    plt.show()
-
-    # convert real model
-    model = g.build_RNN_model(
-        layer_type=model_data[0]['rnn_type'],
-        rnn_layer_sizes=model_data[0]['rnn_layer_sizes'],
-        dense_layer_sizes=model_data[0]['dense_layer_sizes'],
-        activations=model_data[0]['activations'],
-        optimizer=model_data[0]['optimizer'],
-        loss=model_data[0]['loss']
-    )
-
-    crd.convert_model_keras(
-        model,
-        optimizer=model_data[0]['optimizer'],
-        optimizer=model_data[0]['batch_size'],
-        data_type='Unit',
-        scaler=scaler
-    )

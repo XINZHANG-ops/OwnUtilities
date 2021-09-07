@@ -9,8 +9,8 @@ import tensorflow.keras as keras
 import pandas as pd
 from tqdm import tqdm
 import numpy as np
-from keras.models import Sequential
-from keras.layers import Dense
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
 from random import sample
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import OneHotEncoder
