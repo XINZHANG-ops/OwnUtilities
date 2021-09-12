@@ -18,6 +18,7 @@ import collections
 import tensorflow as tf
 from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2_as_graph
 from sklearn.preprocessing import OneHotEncoder
+from collections.abc import Iterable
 
 activation_fcts = [
     'relu', "sigmoid", "softmax", "softplus", "softsign", "tanh", "selu", "elu", "exponential"
@@ -687,7 +688,7 @@ class convert_cnn2d_data:
                 ]
 
             if layer_name == 'Dense':
-                if isinstance(input_shape, list):
+                if isinstance(input_shape, Iterable):
                     input_shape = np.prod(input_shape)
                 else:
                     pass
@@ -910,7 +911,7 @@ class convert_cnn2d_data:
         @param optimizer:
         @param batch_size:
         @param layer_num_upper:
-        @param data_type:
+        @param data_type: FLOPs or ShapeFlow
         @param scaler:  None or should from convert_model_config, but if not None, also need optimizer and batch_size not None
         @return:
         """
