@@ -605,6 +605,117 @@ class convert_cnn2d_data:
         return (2 * i - 1) * o
 
     @staticmethod
+    def get_flops_conv2d_model_config(input_shape, model_config, sum_all=True, add_pooling=True):
+        """
+
+        @param input_shape:
+        @param model_config:
+        @param sum_all:
+        @param add_pooling:
+        @return:
+        """
+
+        conv_flops = []
+        pool_flops = []
+        dense_flops = []
+        all_flops = []
+        for idx, (layer_data, layer_name) in enumerate(zip(model_config[0][:-1], model_config[1])):
+            if layer_name == 'Conv2D' or layer_name == 'SeparableConv2D':
+                filters = layer_data['filters']
+                kernel_size = layer_data['kernel_size'][0]
+                strides = layer_data['strides'][0]
+                padding_method = layer_data['padding']
+                previous_channels = input_shape[-1]
+                if padding_method == 'same':
+                    output = convert_cnn2d_data.same_padding_output(
+                        input_shape[0], kernel_size, strides
+                    )
+                    flops = convert_cnn2d_data.conv2d_layer_flops(
+                        input_shape[0], input_shape[1], previous_channels, kernel_size, filters
+                    )
+                    conv_flops.append(flops)
+                    all_flops.append(flops)
+                    input_shape = [output, output, filters]
+                    # conv_flops.append(np.prod(input_shape))
+                else:
+                    output = convert_cnn2d_data.valid_padding_output(
+                        input_shape[0], kernel_size, strides
+                    )
+                    flops = convert_cnn2d_data.conv2d_layer_flops(
+                        input_shape[0], input_shape[1], previous_channels, kernel_size, filters
+                    )
+                    conv_flops.append(flops)
+                    all_flops.append(flops)
+                    input_shape = [output, output, filters]
+                    # conv_flops.append(np.prod(input_shape))
+
+            if layer_name == 'MaxPooling2D' or layer_name == 'AveragePooling2D':
+                kernel_size = layer_data['pool_size'][0]
+                strides = layer_data['strides'][0]
+                padding_method = layer_data['padding']
+                previous_channels = input_shape[-1]
+                if padding_method == 'same':
+                    output = convert_cnn2d_data.same_padding_output(
+                        input_shape[0], kernel_size, strides
+                    )
+                    flops = convert_cnn2d_data.conv2d_layer_flops(
+                        input_shape[0], input_shape[1], previous_channels, kernel_size,
+                        previous_channels
+                    )
+                    # flops = np.prod(input_shape)
+                    pool_flops.append(flops)
+                    all_flops.append(flops)
+                    input_shape = [output, output, previous_channels]
+                else:
+                    output = convert_cnn2d_data.valid_padding_output(
+                        input_shape[0], kernel_size, strides
+                    )
+                    flops = convert_cnn2d_data.conv2d_layer_flops(
+                        input_shape[0], input_shape[1], previous_channels, kernel_size,
+                        previous_channels
+                    )
+                    # flops = np.prod(input_shape)
+                    pool_flops.append(flops)
+                    all_flops.append(flops)
+                    input_shape = [output, output, previous_channels]
+
+            if layer_name == 'ZeroPadding2D':
+                w_padding_size = layer_data['padding'][0]
+                h_padding_size = layer_data['padding'][1]
+                input_shape = [
+                    input_shape[0] + np.sum(w_padding_size),
+                    input_shape[1] + np.sum(h_padding_size), input_shape[-1]
+                ]
+            if layer_name == 'Cropping2D':
+                w_cropping_size = layer_data['cropping'][0]
+                h_cropping_size = layer_data['cropping'][1]
+                input_shape = [
+                    input_shape[0] - np.sum(w_cropping_size),
+                    input_shape[1] - np.sum(h_cropping_size), input_shape[-1]
+                ]
+
+            if layer_name == 'Dense':
+                if isinstance(input_shape, Iterable):
+                    input_shape = np.prod(input_shape)
+                else:
+                    pass
+                flops = convert_cnn2d_data.dense_layer_flops(input_shape, layer_data['units'])
+                input_shape = layer_data['units']
+                dense_flops.append(flops)
+                all_flops.append(flops)
+                # dense_flops.append(input_shape)
+        if sum_all:
+            if add_pooling:
+                return sum(all_flops)
+            else:
+                return sum(conv_flops + dense_flops)
+        else:
+            if add_pooling:
+                return all_flops
+            else:
+                return conv_flops + dense_flops
+
+    @staticmethod
     def get_flops_conv2d_keras(input_shape, conv_model_obj, sum_all=True, add_pooling=True):
         conv_flops = []
         pool_flops = []
@@ -707,6 +818,95 @@ class convert_cnn2d_data:
                 return all_flops
             else:
                 return conv_flops + dense_flops
+
+    @staticmethod
+    def get_data_shape_flow_conv2d_model_config(
+        input_shape, model_config, start_from=1, up_to=3, conv_weight=1, pool_weight=1
+    ):
+        """
+        Will use the image shape flow inside the conv2d model as data
+        @param input_shape:
+        @param model_config:
+        @param start_from:
+        @param up_to:
+        @param conv_weight:
+        @param pool_weight:
+        @return:
+        """
+
+        multiplications = []
+        shape_flow = []
+        dense_shapes = []
+        input_shape = conv_weight * np.array(input_shape[start_from:up_to])
+        shape_flow.append(input_shape)
+        conv_shape_flow = []
+        polling_shape_flow = []
+        conv_shape_flow.append(input_shape)
+        for idx, (layer_data, layer_name) in enumerate(zip(model_config[0][:-1], model_config[1])):
+            if layer_name == 'Conv2D' or layer_name == 'SeparableConv2D':
+                filters = layer_data['filters']
+                kernel_size = layer_data['kernel_size'][0]
+                strides = layer_data['strides'][0]
+                padding_method = layer_data['padding']
+                previous_channels = input_shape[-1]
+                if padding_method == 'same':
+                    output = convert_cnn2d_data.same_padding_output(
+                        input_shape[0], kernel_size, strides
+                    )
+                    input_shape = [output, output, filters]
+                    conv_shape_flow.append(conv_weight * np.array(input_shape[start_from:up_to]))
+                    shape_flow.append(conv_weight * np.array(input_shape[start_from:up_to]))
+                    muls = kernel_size * kernel_size * previous_channels * output * output
+                    multiplications.append(muls)
+                else:
+                    output = convert_cnn2d_data.valid_padding_output(
+                        input_shape[0], kernel_size, strides
+                    )
+                    input_shape = [output, output, filters]
+                    conv_shape_flow.append(conv_weight * np.array(input_shape[start_from:up_to]))
+                    shape_flow.append(conv_weight * np.array(input_shape[start_from:up_to]))
+                    muls = kernel_size * kernel_size * previous_channels * output * output
+                    multiplications.append(muls)
+            if layer_name == 'MaxPooling2D' or layer_name == 'AveragePooling2D':
+                kernel_size = layer_data['pool_size'][0]
+                strides = layer_data['strides'][0]
+                padding_method = layer_data['padding']
+                if padding_method == 'same':
+                    output = convert_cnn2d_data.same_padding_output(
+                        input_shape[0], kernel_size, strides
+                    )
+                    input_shape = [output, output, input_shape[-1]]
+                    polling_shape_flow.append(pool_weight * np.array(input_shape[start_from:up_to]))
+                    shape_flow.append(pool_weight * np.array(input_shape[start_from:up_to]))
+                else:
+                    output = convert_cnn2d_data.valid_padding_output(
+                        input_shape[0], kernel_size, strides
+                    )
+                    input_shape = [output, output, input_shape[-1]]
+                    polling_shape_flow.append(pool_weight * np.array(input_shape[start_from:up_to]))
+                    shape_flow.append(pool_weight * np.array(input_shape[start_from:up_to]))
+            if layer_name == 'ZeroPadding2D':
+                w_padding_size = layer_data['padding'][0]
+                h_padding_size = layer_data['padding'][1]
+                input_shape = [
+                    input_shape[0] + np.sum(w_padding_size),
+                    input_shape[1] + np.sum(h_padding_size), input_shape[-1]
+                ]
+                polling_shape_flow.append(pool_weight * np.array(input_shape[start_from:up_to]))
+                shape_flow.append(pool_weight * np.array(input_shape[start_from:up_to]))
+            if layer_name == 'Cropping2D':
+                w_cropping_size = layer_data['cropping'][0]
+                h_cropping_size = layer_data['cropping'][1]
+                input_shape = [
+                    input_shape[0] - np.sum(w_cropping_size),
+                    input_shape[1] - np.sum(h_cropping_size), input_shape[-1]
+                ]
+                polling_shape_flow.append(pool_weight * np.array(input_shape[start_from:up_to]))
+                shape_flow.append(pool_weight * np.array(input_shape[start_from:up_to]))
+
+            if layer_name == 'Dense':
+                dense_shapes.append(layer_data['units'])
+        return shape_flow, conv_shape_flow, polling_shape_flow, dense_shapes, multiplications
 
     @staticmethod
     def get_data_shape_flow_conv2d_keras(
@@ -849,19 +1049,21 @@ class convert_cnn2d_data:
         for index, model_config in enumerate(tqdm(model_config_conv2d)):
             batch_size = model_config[-1]['batch_size']
             optimizer = model_config[0][-1]['Compile']['optimizer']
-            conv_model = gen_cnn2d.build_cnn2d_model(model_config[0], model_config[1])
+            # conv_model = gen_cnn2d.build_cnn2d_model(model_config[0], model_config[1])
             input_shape = model_config[-2]
             # conv_model.build(input_shape=(batch_size, *input_shape))
             # flops = get_flops(conv_model, batch_size=batch_size)
-            shape_flow, conv_shape_flow, polling_shape_flow, dense_shapes, multiplications = convert_cnn2d_data.get_data_shape_flow_conv2d_keras(
-                input_shape, conv_model
+            shape_flow, conv_shape_flow, polling_shape_flow, dense_shapes, multiplications = convert_cnn2d_data.get_data_shape_flow_conv2d_model_config(
+                input_shape, model_config
             )
             shape_flow = [np.prod(i) for i in shape_flow]
             shape_flow = shape_flow[:layer_num_upper]
             short_position1 = layer_num_upper - len(shape_flow)
             shape_flow = shape_flow + [0] * short_position1
 
-            flops_layer = convert_cnn2d_data.get_flops_conv2d_keras(input_shape, conv_model, False)
+            flops_layer = convert_cnn2d_data.get_flops_conv2d_model_config(
+                input_shape, model_config, False
+            )
             flops_layer = flops_layer[:layer_num_upper]
             short_position = layer_num_upper - len(flops_layer)
             flops_layer = flops_layer + [0] * short_position
