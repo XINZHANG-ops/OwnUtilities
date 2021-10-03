@@ -4,6 +4,27 @@ import numpy as np
 import pandas as pd
 
 
+class Surface_Plot:
+    def __init__(self):
+        pass
+
+    def plot_from_mapping_function(
+        self, x, y, z_fun, title=None, width=500, height=500, margin=dict(l=65, r=50, b=65, t=90)
+    ):
+        z_data = z_fun(np.meshgrid(x, y)[0], np.meshgrid(x, y)[1])
+
+        fig = go.Figure(data=[go.Surface(z=z_data)])
+        fig.update_layout(title=title, autosize=False, width=width, height=height, margin=margin)
+        fig.show()
+
+    def plot_from_z_data(
+        self, z_data, title=None, width=500, height=500, margin=dict(l=65, r=50, b=65, t=90)
+    ):
+        fig = go.Figure(data=[go.Surface(z=z_data)])
+        fig.update_layout(title=title, autosize=False, width=width, height=height, margin=margin)
+        fig.show()
+
+
 class Categorical_Scatter:
     def __init__(self, X, y=None, labels=None):
         """
@@ -182,3 +203,14 @@ def demo():
     # the second y are annotations on the plot, could be None
     cs = Categorical_Scatter(X, y, y)
     cs.plot()
+
+
+def demo_3d_surface():
+    def test_f(x, y):
+        return x**2 + y**2
+
+    x = np.linspace(0, 1, 100)
+    y = np.linspace(0, 1, 100)
+
+    sp = Surface_Plot()
+    sp.plot_from_mapping_function(x, y, test_f)
