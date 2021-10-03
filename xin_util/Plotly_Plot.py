@@ -13,14 +13,14 @@ class Surface_Plot:
     ):
         z_data = z_fun(np.meshgrid(x, y)[0], np.meshgrid(x, y)[1])
 
-        fig = go.Figure(data=[go.Surface(z=z_data)])
+        fig = go.Figure(data=[go.Surface(z=z_data, x=x, y=y)])
         fig.update_layout(title=title, autosize=False, width=width, height=height, margin=margin)
         fig.show()
 
     def plot_from_z_data(
-        self, z_data, title=None, width=500, height=500, margin=dict(l=65, r=50, b=65, t=90)
+        self, x, y, z_data, title=None, width=500, height=500, margin=dict(l=65, r=50, b=65, t=90)
     ):
-        fig = go.Figure(data=[go.Surface(z=z_data)])
+        fig = go.Figure(data=[go.Surface(z=z_data, x=x, y=y)])
         fig.update_layout(title=title, autosize=False, width=width, height=height, margin=margin)
         fig.show()
 
