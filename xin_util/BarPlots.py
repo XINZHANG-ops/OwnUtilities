@@ -82,9 +82,9 @@ def plot_stacked_bar(
 def distribution_bar(values, bars=10, width_shrink=0.99, progress=True, **kwargs):
     max_val = max(values)
     min_val = min(values)
-    space = np.linspace(max_val, min_val, bars)
+    space = np.linspace(min_val, max_val, bars)
     bar_divide = list(nltk.bigrams(space))
-    x_loc = np.array([np.mean(i + j) for i, j in bar_divide])
+    x_loc = np.array([np.mean([i, j]) for i, j in bar_divide])
     width = 2 * (bar_divide[0][1] - bar_divide[0][0]) * width_shrink
 
     if progress:

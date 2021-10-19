@@ -9,24 +9,20 @@
 def find_top_n_faster(vlist, top_n, method="min", show_progress=True):
     if show_progress:
         print(f'finding top {top_n} values')
-    top_n_value_dict = {0: vlist[0]}
-    top_n_index_dict = {0: 0}
-    current_extreme_value = vlist[0]
-    current_extreme_key = 0
-    for i in range(top_n - 1):
-        new_value = vlist[i + 1]
-        new_index = i + 1
-        top_n_value_dict[new_index] = new_value
-        top_n_index_dict[new_index] = new_index
-        top_n_inverse_value = {v: k for k, v in top_n_value_dict.items()}
-        if new_value < current_extreme_value and method == 'min':
-            current_extreme_value = max(top_n_inverse_value.keys())
-            current_extreme_key = top_n_inverse_value[current_extreme_value]
-        elif new_value > current_extreme_value and method == 'max':
-            current_extreme_value = min(top_n_inverse_value.keys())
-            current_extreme_key = top_n_inverse_value[current_extreme_value]
-        else:
-            continue
+
+    top_n_values = vlist[:top_n]
+    top_n_value_dict = dict((i, v) for i, v in enumerate(top_n_values))
+    top_n_index_dict = dict((i, i) for i, v in enumerate(top_n_values))
+    top_n_inverse_value = {v: k for k, v in top_n_value_dict.items()}
+    if method == 'min':
+        current_extreme_value = max(top_n_value_dict.values())
+        current_extreme_key = top_n_inverse_value[current_extreme_value]
+    elif method == 'max':
+        current_extreme_value = min(top_n_value_dict.values())
+        current_extreme_key = top_n_inverse_value[current_extreme_value]
+    else:
+        pass
+
     if show_progress:
         from tqdm import tqdm
         loop_pre_fun = tqdm
