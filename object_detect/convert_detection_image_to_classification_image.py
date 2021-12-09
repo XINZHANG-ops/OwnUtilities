@@ -16,6 +16,9 @@ class obj_to_cls:
         @param labels_dir: txt format labels
         @param filter_diff: if filter image and label files with name doesn't match
         """
+        if labels_dir is None:
+            labels_dir = images_dir
+
         image_path = []
         label_path = []
         image_names = set()
