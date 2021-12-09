@@ -9,16 +9,17 @@ import shutil
 
 
 class obj_to_cls:
-    def __init__(self, images_dir, labels_dir=None):
+    def __init__(self, images_dir, labels_dir=None, filter_diff=True):
         """
 
         @param images_dir: .jpg format images
         @param labels_dir: txt format labels
+        @param filter_diff: if filter image and label files with name doesn't match
         """
         image_path = []
         label_path = []
-        if labels_dir is None:
-            labels_dir = images_dir
+        image_names = set()
+        label_names = set()
 
         for root, dirs, files in os.walk(images_dir):
             for file in files:
@@ -26,8 +27,9 @@ class obj_to_cls:
                     if 'checkpoint' in file:
                         pass
                     else:
-                        image_path.append(os.path.join(root, file))
-        image_path = sorted(image_path)
+                        file_path = os.path.join(root, file)
+                        image_names.add(os.path.splitext(file_path.split(os.sep)[-1])[0])
+                        image_path.append(file_path)
 
         for root, dirs, files in os.walk(labels_dir):
             for file in files:
@@ -35,8 +37,17 @@ class obj_to_cls:
                     if 'checkpoint' in file:
                         pass
                     else:
-                        label_path.append(os.path.join(root, file))
+                        file_path = os.path.join(root, file)
+                        label_names.add(os.path.splitext(file_path.split(os.sep)[-1])[0])
+                        label_path.append(file_path)
 
+        common_names = image_names.intersection(label_names)
+
+        if filter_diff:
+            image_path = [i for i in image_path if os.path.splitext(i.split(os.sep)[-1])[0] in common_names]
+            label_path = [i for i in label_path if os.path.splitext(i.split(os.sep)[-1])[0] in common_names]
+
+        image_path = sorted(image_path)
         label_path = sorted(label_path)
 
         self.image_path = image_path
