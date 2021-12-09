@@ -30,10 +30,10 @@ class ObjectMapper(object):
                 xml.user_object("object", Object, [
                     xml.string("name"),
                     xml.user_object("bndbox", Box, [
-                        xml.integer("xmin"),
-                        xml.integer("ymin"),
-                        xml.integer("xmax"),
-                        xml.integer("ymax"),
+                        xml.floating_point("xmin"),
+                        xml.floating_point("ymin"),
+                        xml.floating_point("xmax"),
+                        xml.floating_point("ymax"),
                     ], alias="box")
                 ]),
                 alias="objects"
