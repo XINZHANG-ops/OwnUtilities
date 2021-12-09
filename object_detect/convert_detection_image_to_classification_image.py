@@ -44,8 +44,8 @@ class obj_to_cls:
     def test_if_unique_data_pairs(self):
         # TEST if any image and label doesn't match
         for ip, lp in self.image_label_path_pair:
-            ip_name = ip.split('/')[-1].split('.')[0]
-            lp_name = lp.split('/')[-1].split('.')[0]
+            ip_name = '.'.join(ip.split('/')[-1].split('.')[:-1])
+            lp_name = '.'.join(lp.split('/')[-1].split('.')[:-1])
             if ip_name == lp_name:
                 pass
             else:
