@@ -116,37 +116,36 @@ class Reader(object):
             return {value: key for (key, value) in enumerate(list(map(lambda x: x.strip(), lines)))}
 
 
-
 class Transformer(object):
-    def __init__(self, xml_dir, out_dir, class_file):
+    def __init__(self, xml_dir, out_dir):
         self.xml_dir = xml_dir
         self.out_dir = out_dir
-        self.class_file = class_file
+        self.all_classes = set()
+        self.label_map = dict()
 
     def transform(self):
         reader = Reader(xml_dir=self.xml_dir)
         xml_files = reader.get_xml_files()
-        classes = reader.get_classes(self.class_file)
         object_mapper = ObjectMapper()
         annotations = object_mapper.bind_files(xml_files, xml_dir=self.xml_dir)
-        self.write_to_txt(annotations, classes)
+        self.write_to_txt(annotations)
 
-    def write_to_txt(self, annotations, classes):
+    def write_to_txt(self, annotations):
         for annotation in annotations:
             output_path = os.path.join(self.out_dir, self.darknet_filename_format(annotation.filename))
             if not os.path.exists(os.path.dirname(output_path)):
                 os.makedirs(os.path.dirname(output_path))
             with open(output_path, "w+") as f:
-                f.write(self.to_darknet_format(annotation, classes))
+                f.write(self.to_darknet_format(annotation))
 
-    def to_darknet_format(self, annotation, classes):
+    def to_darknet_format(self, annotation):
         result = []
         for obj in annotation.objects:
-            if obj.name not in classes:
-                print("Please, add '%s' to classes.txt file." % obj.name)
-                exit()
+            self.all_classes.add(obj.name)
+            int_label = len(self.all_classes) - 1
+            self.label_map[int_label] = obj.name
             x, y, width, height = self.get_object_params(obj, annotation.size)
-            result.append("%d %.6f %.6f %.6f %.6f" % (classes[obj.name], x, y, width, height))
+            result.append("%d %.6f %.6f %.6f %.6f" % (int_label, x, y, width, height))
         return "\n".join(result)
 
     @staticmethod
@@ -173,12 +172,12 @@ class Transformer(object):
         pre, ext = os.path.splitext(filename)
         return "%s.txt" % pre
 
-def convert(xml_dir, out_dir, class_file='classes.txt'):
+
+def convert(xml_dir, out_dir):
     """
 
     @param xml_dir:
     @param out_dir:
-    @param class_file: txt file contains all labels, each label per line
     @return:
     """
     if not os.path.exists(xml_dir):
@@ -192,13 +191,14 @@ def convert(xml_dir, out_dir, class_file='classes.txt'):
         print("%s folder is not writeable." % out_dir)
         sys.exit()
 
-    if not os.access(class_file, os.F_OK):
-        print("%s file is missing." % class_file)
-        sys.exit()
-
-    if not os.access(class_file, os.R_OK):
-        print("%s file is not readable." % class_file)
-        sys.exit()
-
-    transformer = Transformer(xml_dir=xml_dir, out_dir=out_dir, class_file=class_file)
+    transformer = Transformer(xml_dir=xml_dir, out_dir=out_dir)
     transformer.transform()
+
+    return transformer.label_map
+
+
+def demo():
+    xml_data_dir = 'linmao_camera_data'
+    output_txt_data_dir = 'linmao_camera_data_txt'
+    label_map = convert(xml_data_dir, output_txt_data_dir)
+    print(label_map)
