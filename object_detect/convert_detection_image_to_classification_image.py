@@ -53,6 +53,8 @@ class obj_to_cls:
         image_path = sorted(image_path)
         label_path = sorted(label_path)
 
+        self.images_dir = images_dir
+        self.labels_dir = labels_dir
         self.image_path = image_path
         self.label_path = label_path
         self.image_label_path_pair = list(zip(image_path, label_path))
@@ -149,13 +151,16 @@ class obj_to_cls:
         @param new_dir:
         @return:
         """
+
         all_image_path = []
         for ip in self.image_path:
-            all_image_path.append(os.path.join(*ip.split(os.sep)[1:-1]))
+            ip_idx = ip.split(os.sep).index(self.images_dir)
+            all_image_path.append(os.path.join(*ip.split(os.sep)[ip_idx+1:-1]))
 
         all_label_path = []
         for lp in self.label_path:
-            all_label_path.append(os.path.join(*lp.split(os.sep)[1:-1]))
+            lp_idx = lp.split(os.sep).index(self.labels_dir)
+            all_label_path.append(os.path.join(*lp.split(os.sep)[lp_idx+1:-1]))
 
         all_image_path = list(set(all_image_path))
         all_label_path = list(set(all_label_path))
