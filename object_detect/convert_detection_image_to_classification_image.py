@@ -9,10 +9,12 @@ import shutil
 
 
 class obj_to_cls:
-    def __init__(self, images_dir, labels_dir=None, filter_diff=True):
+    def __init__(self, images_dir, expand_ratio_width=0.1, expand_ratio_hight=0.1, labels_dir=None, filter_diff=True):
         """
 
         @param images_dir: .jpg format images
+        @param extend_ratio: expand the box by ratio (negative means crop more), but don't do negative since image
+        augmentation will take care of that. Can bigger than 1
         @param labels_dir: txt format labels
         @param filter_diff: if filter image and label files with name doesn't match
         """
@@ -58,6 +60,8 @@ class obj_to_cls:
         self.image_path = image_path
         self.label_path = label_path
         self.image_label_path_pair = list(zip(image_path, label_path))
+        self.expand_ratio_width = expand_ratio_width
+        self.expand_ratio_hight = expand_ratio_hight
 
     @staticmethod
     def create_folder(path, sub_dirs):
@@ -102,12 +106,12 @@ class obj_to_cls:
         all_image_path = []
         for ip in self.image_path:
             ip_idx = ip.split(os.sep).index(self.images_dir.split(os.sep)[-1])
-            all_image_path.append(os.path.join(*ip.split(os.sep)[ip_idx+1:-1]))
+            all_image_path.append(os.path.join(*ip.split(os.sep)[ip_idx + 1:-1]))
 
         all_label_path = []
         for lp in self.label_path:
             lp_idx = lp.split(os.sep).index(self.labels_dir.split(os.sep)[-1])
-            all_label_path.append(os.path.join(*lp.split(os.sep)[lp_idx+1:-1]))
+            all_label_path.append(os.path.join(*lp.split(os.sep)[lp_idx + 1:-1]))
 
         all_image_path = list(set(all_image_path))
         all_label_path = list(set(all_label_path))
@@ -124,21 +128,27 @@ class obj_to_cls:
                 hight, width = img_array.shape
             with open(lb_p) as f:
                 lines = f.read().splitlines()
+
             for l in lines:
                 line_split = l.split(' ')
                 label = int(line_split[0])
                 x, y, w, h = tuple([float(i) for i in line_split[1:5]])
 
-                top_left_x = math.floor(x * width - w * width / 2)
-                top_left_y = math.floor(y * hight - h * hight / 2)
-                bot_right_x = math.floor(x * width + w * width / 2)
-                bot_right_y = math.floor(y * hight + h * hight / 2)
+                # change crop ratio
+                w = (1 + self.expand_ratio_width) * w
+                h = (1 + self.expand_ratio_hight) * h
+
+                # take max or min to make sure the crop is within the image
+                top_left_x = max(math.floor(x * width - w * width / 2), 0)
+                top_left_y = max(math.floor(y * hight - h * hight / 2), 0)
+                bot_right_x = min(math.floor(x * width + w * width / 2), width)
+                bot_right_y = min(math.floor(y * hight + h * hight / 2), hight)
 
                 img2 = img.crop((top_left_x, top_left_y, bot_right_x, bot_right_y))
 
                 ip_idx = im_p.split(os.sep).index(self.images_dir.split(os.sep)[-1])
 
-                save_dir = os.path.join(new_dir, *im_p.split(os.sep)[1+ip_idx:-1], f'{label}')
+                save_dir = os.path.join(new_dir, *im_p.split(os.sep)[1 + ip_idx:-1], f'{label}')
                 if os.path.exists(save_dir):
                     pass
                 else:
@@ -158,12 +168,12 @@ class obj_to_cls:
         all_image_path = []
         for ip in self.image_path:
             ip_idx = ip.split(os.sep).index(self.images_dir.split(os.sep)[-1])
-            all_image_path.append(os.path.join(*ip.split(os.sep)[ip_idx+1:-1]))
+            all_image_path.append(os.path.join(*ip.split(os.sep)[ip_idx + 1:-1]))
 
         all_label_path = []
         for lp in self.label_path:
             lp_idx = lp.split(os.sep).index(self.labels_dir.split(os.sep)[-1])
-            all_label_path.append(os.path.join(*lp.split(os.sep)[lp_idx+1:-1]))
+            all_label_path.append(os.path.join(*lp.split(os.sep)[lp_idx + 1:-1]))
 
         all_image_path = list(set(all_image_path))
         all_label_path = list(set(all_label_path))
@@ -182,19 +192,22 @@ class obj_to_cls:
                 lines = f.read().splitlines()
             for l in lines:
                 line_split = l.split(' ')
-                label = int(line_split[0])
-                current_labels[label] += 1
                 x, y, w, h = tuple([float(i) for i in line_split[1:5]])
 
-                top_left_x = math.floor(x * width - w * width / 2)
-                top_left_y = math.floor(y * hight - h * hight / 2)
-                bot_right_x = math.floor(x * width + w * width / 2)
-                bot_right_y = math.floor(y * hight + h * hight / 2)
+                # change crop ratio
+                w = (1 + self.expand_ratio_width) * w
+                h = (1 + self.expand_ratio_hight) * h
+
+                # take max or min to make sure the crop is within the image
+                top_left_x = max(math.floor(x * width - w * width / 2), 0)
+                top_left_y = max(math.floor(y * hight - h * hight / 2), 0)
+                bot_right_x = min(math.floor(x * width + w * width / 2), width)
+                bot_right_y = min(math.floor(y * hight + h * hight / 2), hight)
 
                 img2 = img.crop((top_left_x, top_left_y, bot_right_x, bot_right_y))
 
                 ip_idx = im_p.split(os.sep).index(self.images_dir.split(os.sep)[-1])
-                save_dir = obj_to_cls.uniquify(os.path.join(new_dir, os.path.join(*im_p.split(os.sep)[1+ip_idx:])))
+                save_dir = obj_to_cls.uniquify(os.path.join(new_dir, os.path.join(*im_p.split(os.sep)[1 + ip_idx:])))
                 img2.save(save_dir)
 
 
