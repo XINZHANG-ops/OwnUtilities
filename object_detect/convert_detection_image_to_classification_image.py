@@ -90,63 +90,10 @@ class obj_to_cls:
                 print(ip_name, lp_name)
                 print("name doesn't match")
 
-    def convert_to_classification_data(self, save_path):
+    def convert_to_classification_data(self, new_dir):
         """
-        This will ignore the train test structure of original directory, and create a new directory contains each category as a subdirectory
-        @param save_path:
-        @return:
-        """
-        import nltk
-        from tqdm import tqdm
-        if os.path.exists(save_path):
-            shutil.rmtree(save_path)
-            os.mkdir(save_path)
-        else:
-            os.mkdir(save_path)
-
-        current_labels = nltk.defaultdict(int)
-
-        for img_dir, label_dir in tqdm(self.image_label_path_pair):
-            ip_name = img_dir.split('/')[-1].split('.')[0]
-            img = Image.open(img_dir)
-            # plt.figure(figsize=(15, 8))
-            # plt.imshow(img)
-            img_array = np.array(img)  # convert to np array
-
-            # Note that some pictures doesn't have channel
-            try:
-                hight, width, channel = img_array.shape
-            except:
-                hight, width = img_array.shape
-            with open(label_dir) as f:
-                lines = f.read().splitlines()
-            for l in lines:
-                line_split = l.split(' ')
-                label = int(line_split[0])
-                current_labels[label] += 1
-                x, y, w, h = tuple([float(i) for i in line_split[1:5]])
-
-                top_left_x = math.floor(x * width - w * width / 2)
-                top_left_y = math.floor(y * hight - h * hight / 2)
-                bot_right_x = math.floor(x * width + w * width / 2)
-                bot_right_y = math.floor(y * hight + h * hight / 2)
-
-                img2 = img.crop((top_left_x, top_left_y, bot_right_x, bot_right_y))
-                # plt.figure(figsize=(15, 8))
-                # plt.imshow(img2)
-
-                save_dir = os.path.join(save_path, str(label), str(current_labels[label]) + '.jpg')
-
-                try:
-                    img2.save(save_dir)
-                except:
-                    os.mkdir(os.path.join(save_path, str(label)))
-                    img2.save(save_dir)
-
-    def convert_to_classification_data_same_structure(self, new_dir):
-        """
-        This function will remain the original directory structure and if one image has multiple object
-        the save name will be added (1) or (2) etc
+        This function will remain the original directory structure and create label-wise sub-folder,
+        if one image has multiple object the save name will be added (1) or (2) etc
         @param self:
         @param new_dir:
         @return:
@@ -154,12 +101,12 @@ class obj_to_cls:
 
         all_image_path = []
         for ip in self.image_path:
-            ip_idx = ip.split(os.sep).index(self.images_dir)
+            ip_idx = ip.split(os.sep).index(self.images_dir.split(os.sep)[-1])
             all_image_path.append(os.path.join(*ip.split(os.sep)[ip_idx+1:-1]))
 
         all_label_path = []
         for lp in self.label_path:
-            lp_idx = lp.split(os.sep).index(self.labels_dir)
+            lp_idx = lp.split(os.sep).index(self.labels_dir.split(os.sep)[-1])
             all_label_path.append(os.path.join(*lp.split(os.sep)[lp_idx+1:-1]))
 
         all_image_path = list(set(all_image_path))
@@ -189,10 +136,66 @@ class obj_to_cls:
 
                 img2 = img.crop((top_left_x, top_left_y, bot_right_x, bot_right_y))
 
-                save_dir = obj_to_cls.uniquify(os.path.join(new_dir, os.path.join(*im_p.split(os.sep)[1:])))
+                ip_idx = im_p.split(os.sep).index(self.images_dir.split(os.sep)[-1])
+
+                save_dir = os.path.join(new_dir, *im_p.split(os.sep)[1+ip_idx:-1], f'{label}')
+                if os.path.exists(save_dir):
+                    pass
+                else:
+                    os.mkdir(save_dir)
+                save_path = obj_to_cls.uniquify(os.path.join(save_dir, im_p.split(os.sep)[-1]))
+                img2.save(save_path)
+
+    def convert_to_classification_data_same_structure(self, new_dir):
+        """
+        This function will remain the original directory structure and if one image has multiple object
+        the save name will be added (1) or (2) etc
+        @param self:
+        @param new_dir:
+        @return:
+        """
+
+        all_image_path = []
+        for ip in self.image_path:
+            ip_idx = ip.split(os.sep).index(self.images_dir.split(os.sep)[-1])
+            all_image_path.append(os.path.join(*ip.split(os.sep)[ip_idx+1:-1]))
+
+        all_label_path = []
+        for lp in self.label_path:
+            lp_idx = lp.split(os.sep).index(self.labels_dir.split(os.sep)[-1])
+            all_label_path.append(os.path.join(*lp.split(os.sep)[lp_idx+1:-1]))
+
+        all_image_path = list(set(all_image_path))
+        all_label_path = list(set(all_label_path))
+        obj_to_cls.create_folder(new_dir, all_image_path)
+
+        for im_p, lb_p in tqdm(self.image_label_path_pair):
+            img = Image.open(im_p)
+            img_array = np.array(img)  # convert to np array
+
+            # Note that some pictures doesn't have channel
+            try:
+                hight, width, channel = img_array.shape
+            except:
+                hight, width = img_array.shape
+            with open(lb_p) as f:
+                lines = f.read().splitlines()
+            for l in lines:
+                line_split = l.split(' ')
+                label = int(line_split[0])
+                current_labels[label] += 1
+                x, y, w, h = tuple([float(i) for i in line_split[1:5]])
+
+                top_left_x = math.floor(x * width - w * width / 2)
+                top_left_y = math.floor(y * hight - h * hight / 2)
+                bot_right_x = math.floor(x * width + w * width / 2)
+                bot_right_y = math.floor(y * hight + h * hight / 2)
+
+                img2 = img.crop((top_left_x, top_left_y, bot_right_x, bot_right_y))
+
+                ip_idx = im_p.split(os.sep).index(self.images_dir.split(os.sep)[-1])
+                save_dir = obj_to_cls.uniquify(os.path.join(new_dir, os.path.join(*im_p.split(os.sep)[1+ip_idx:])))
                 img2.save(save_dir)
-
-
 
 
 def demo():
