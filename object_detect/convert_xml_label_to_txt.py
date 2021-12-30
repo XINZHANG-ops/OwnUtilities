@@ -141,9 +141,11 @@ class Transformer(object):
     def to_darknet_format(self, annotation):
         result = []
         for obj in annotation.objects:
+            isin =  obj.name in self.all_classes
             self.all_classes.add(obj.name)
             int_label = len(self.all_classes) - 1
-            self.label_map[int_label] = obj.name
+            if not isin:
+                self.label_map[int_label] = obj.name
             x, y, width, height = self.get_object_params(obj, annotation.size)
             result.append("%d %.6f %.6f %.6f %.6f" % (int_label, x, y, width, height))
         return "\n".join(result)
