@@ -120,7 +120,7 @@ class Transformer(object):
     def __init__(self, xml_dir, out_dir):
         self.xml_dir = xml_dir
         self.out_dir = out_dir
-        self.all_classes = set()
+        self.all_classes = list()
         self.label_map = dict()
 
     def transform(self):
@@ -142,10 +142,11 @@ class Transformer(object):
         result = []
         for obj in annotation.objects:
             isin =  obj.name in self.all_classes
-            self.all_classes.add(obj.name)
-            int_label = len(self.all_classes) - 1
             if not isin:
-                self.label_map[int_label] = obj.name
+                self.all_classes.append(obj.name)
+            int_label = self.all_classes.index(obj.name)
+            self.label_map[int_label] = obj.name
+
             x, y, width, height = self.get_object_params(obj, annotation.size)
             result.append("%d %.6f %.6f %.6f %.6f" % (int_label, x, y, width, height))
         return "\n".join(result)
