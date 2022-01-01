@@ -64,7 +64,7 @@ def tf_idf_classify(
     if process_text:
         df[feature_column] = df[feature_column].progress_apply(process_sow)
     tfidf = TfidfVectorizer(sublinear_tf=True, min_df=5, ngram_range=(1, 2), stop_words='english')
-    features = tfidf.fit_transform(df[feature_column]).toarray()
+    features = tfidf.fit_transform(df[feature_column])
     labels = list(df[label_column])
 
     X_train, X_test, y_train, y_test = train_test_split(
