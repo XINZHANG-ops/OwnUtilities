@@ -1,12 +1,12 @@
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
-from keras import optimizers
-from keras.models import Sequential
-from keras.layers import Dense
-from keras.utils import plot_model
-from keras.preprocessing import sequence
-from keras.preprocessing.text import Tokenizer
+from tensorflow.keras import optimizers
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.utils import plot_model
+from tensorflow.keras.preprocessing import sequence
+from tensorflow.keras.preprocessing.text import Tokenizer
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import LabelEncoder
@@ -15,7 +15,7 @@ from .TextProcess import text_tokens
 from xin_util.Scores import single_label_f_score
 from gensim.models import FastText
 from gensim.models import Word2Vec
-from keras.layers import Embedding, Conv1D, SimpleRNN, LSTM
+from tensorflow.keras.layers import Embedding, Conv1D, SimpleRNN, LSTM
 
 
 def process_sow(text):
