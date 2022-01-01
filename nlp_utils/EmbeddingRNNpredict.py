@@ -108,20 +108,20 @@ def Recurrent_Network_classify(
     common_texts = [sentence.split(' ') for sentence in features]
     if embedding_type == 'ft':
         embedding_model = FastText(
-            size=embedding_dim, window=3, min_count=1, sentences=common_texts, iter=embedding_epoch
+            vector_size=embedding_dim, window=3, min_count=1, sentences=common_texts, epochs=embedding_epoch
         )
     elif embedding_type == 'w2v':
         embedding_model = Word2Vec(
             common_texts,
-            size=embedding_dim,
+            vector_size=embedding_dim,
             window=5,
             min_count=1,
             workers=4,
-            iter=embedding_epoch
+            epochs=embedding_epoch
         )
     else:
         embedding_model = FastText(
-            size=embedding_dim, window=3, min_count=1, sentences=common_texts, iter=5
+            vector_size=embedding_dim, window=3, min_count=1, sentences=common_texts, epochs=5
         )
 
     doc_len = np.array([len(doc.split(' ')) for doc in X_train])
