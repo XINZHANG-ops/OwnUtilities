@@ -2,7 +2,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
 from .TextProcess import text_tokens
-from .Scores import single_label_f_score
+from xin_util.Scores import single_label_f_score
 from tqdm import tqdm
 
 tqdm.pandas()

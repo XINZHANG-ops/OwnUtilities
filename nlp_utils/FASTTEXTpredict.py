@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import confusion_matrix
 from .TextProcess import text_tokens
-from .Scores import single_label_f_score
+from xin_util.Scores import single_label_f_score
 from sklearn.model_selection import train_test_split
 import fasttext
 
