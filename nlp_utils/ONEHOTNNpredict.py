@@ -168,7 +168,7 @@ def Onehot_Network_classify(
         )
     )
     y_pred = list(
-        label_encoder.inverse_transform(model.predict_classes(x_test).astype(int).ravel())
+        label_encoder.inverse_transform(np.argmax(model.predict(x_test), axis=1).astype(int).ravel())
     )
     f, cf = single_label_f_score(y_gold=y_test, y_pred=y_pred)
     print('f-score:', f)
