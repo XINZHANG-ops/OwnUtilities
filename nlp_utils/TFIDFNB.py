@@ -9,7 +9,7 @@ import nltk
 import re
 from nltk.stem import WordNetLemmatizer
 from xin_util.Scores import single_label_f_score
-
+from sklearn.metrics import confusion_matrix
 
 def tf_idf_classify(
     input_df,
@@ -47,8 +47,8 @@ def tf_idf_classify(
     train_X = []
     test_X = []
 
-    train_y = train_df[label_column]
-    test_y = val_df[label_column]
+    train_y = train_df[label_column].tolist()
+    test_y = val_df[label_column].tolist()
 
     labels = list(df[label_column])
     labels = [str(l) for l in labels]
