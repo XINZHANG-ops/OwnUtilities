@@ -14,7 +14,7 @@ from nltk import ngrams
 import re
 import matplotlib.pyplot as plt
 from numpy import *
-from .CreateDIYdictFromDataFrame import CreateDIYdictFromDataFrame
+from xin_util.CreateDIYdictFromDataFrame import CreateDIYdictFromDataFrame
 from nltk.corpus import stopwords
 from gensim.parsing.preprocessing import STOPWORDS
 from spacy.lang.en.stop_words import STOP_WORDS

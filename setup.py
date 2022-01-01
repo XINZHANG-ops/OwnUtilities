@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='xin_util',
-    version='1.3.52',
+    version='1.4.00',
     author="Xin Zhang",
     author_email="1528371521zx@gmail.com",
     description="Xin's self created helper functions",
@@ -17,7 +17,7 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     packages=[
-        'xin_util', 'model_trainingtime_prediction', 'hyperparam_tuning', 'data_process', 'nlp',
+        'xin_util', 'model_trainingtime_prediction', 'hyperparam_tuning', 'data_process', 'nlp_utils',
         'raise_error', 'time_series', 'auto_widgets', 'aws_gdrive', 'ModelHub', 'object_detect'
     ],
     license='MIT',
