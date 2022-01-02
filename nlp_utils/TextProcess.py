@@ -264,7 +264,7 @@ def text_tokens(
 ):
     if lower_case:
         text = text.lower()
-        Englishtext = set(w.lower() for w in W.words())
+        #Englishtext = set(w.lower() for w in W.words())
     text = re.sub(r'\n', "", text)
     if url_filter:
         url_pattern = re.compile(
