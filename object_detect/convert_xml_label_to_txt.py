@@ -117,11 +117,18 @@ class Reader(object):
 
 
 class Transformer(object):
-    def __init__(self, xml_dir, out_dir):
+    def __init__(self, xml_dir, out_dir, label_map):
         self.xml_dir = xml_dir
         self.out_dir = out_dir
-        self.all_classes = list()
-        self.label_map = dict()
+        if label_map is None:
+            self.label_map = dict()
+            self.all_classes = list()
+            self.label_map_exist = False
+        else:
+            self.label_map = label_map
+            self.all_classes = list(label_map.values())
+            self.label_map_exist = True
+            self.inv_map = {v: k for k, v in label_map.items()}
 
     def transform(self):
         reader = Reader(xml_dir=self.xml_dir)
@@ -141,11 +148,14 @@ class Transformer(object):
     def to_darknet_format(self, annotation):
         result = []
         for obj in annotation.objects:
-            isin =  obj.name in self.all_classes
-            if not isin:
-                self.all_classes.append(obj.name)
-            int_label = self.all_classes.index(obj.name)
-            self.label_map[int_label] = obj.name
+            if self.label_map_exist:
+                int_label = self.inv_map[obj.name]
+            else:
+                isin =  obj.name in self.all_classes
+                if not isin:
+                    self.all_classes.append(obj.name)
+                int_label = self.all_classes.index(obj.name)
+                self.label_map[int_label] = obj.name
 
             x, y, width, height = self.get_object_params(obj, annotation.size)
             result.append("%d %.6f %.6f %.6f %.6f" % (int_label, x, y, width, height))
@@ -176,11 +186,12 @@ class Transformer(object):
         return "%s.txt" % pre
 
 
-def convert(xml_dir, out_dir):
+def convert(xml_dir, out_dir, label_map=None):
     """
 
     @param xml_dir:
     @param out_dir:
+    @param label_map: dict of int label map to label name, if None, will generate random mapping
     @return:
     """
     if not os.path.exists(xml_dir):
@@ -194,7 +205,7 @@ def convert(xml_dir, out_dir):
         print("%s folder is not writeable." % out_dir)
         sys.exit()
 
-    transformer = Transformer(xml_dir=xml_dir, out_dir=out_dir)
+    transformer = Transformer(xml_dir=xml_dir, out_dir=out_dir, label_map=label_map)
     transformer.transform()
 
     return transformer.label_map
