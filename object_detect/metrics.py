@@ -250,9 +250,62 @@ class label_map:
         return {'precision': label_wise_precision, 'recall': label_wise_recall, 'average precision': label_wise_ap}
 
 
+    def find_confuse_labels(self, iou_threshold=0.1, pred_boxes=None, true_boxes=None, box_format='midpoint'):
+        """
+        This will give an idea of how model confused between each labels
+
+        @param pred_boxes: result from label_map class, list of boxes, if None, use self.pred_boxes
+        @param true_boxes: result from label_map class, list of boxes, if None, use self.true_boxes
+        @param iou_threshold:
+        @param box_format:
+        @return:
+        """
+        # do suggest put iou_threshold low since this is not a calculation for metrics
+
+        """
+        the iou_threshold still needed think of the case that, there is a true box in the image, but the true box doesn't 
+        overlap any preidction box, which mean it is a missed object, so we want to capture this case. If we don't have an
+        iou_threshold, simply sorted by ious, then the true box actually doesn't match the sorted top predict box
+    
+        """
+        if pred_boxes is None:
+            pred_boxes = self.pred_boxes
+        if true_boxes is None:
+            true_boxes = self.true_boxes
+
+        label_wise_confuse = nltk.defaultdict(lambda: nltk.defaultdict(int))
+        all_img = list(set([i[0] for i in true_boxes]))
+        for img in tqdm(all_img):
+            img_pred = [i for i in pred_boxes if i[0] == img]
+            img_gt = [i for i in true_boxes if i[0] == img]
+            for gt in img_gt:
+                img_ious = []
+                for det in img_pred:
+                    iou = intersection_over_union(
+                        torch.tensor(det[3:]),
+                        torch.tensor(gt[3:]),
+                        box_format=box_format,
+                    )
+                    if iou >= iou_threshold:
+                        img_ious.append([iou, det])
+                if img_ious:
+                    match_pred_box = sorted(img_ious, key=lambda x: x[0], reverse=True)[0][1]
+                    det_cls = match_pred_box[1]
+                else:
+                    det_cls = 'backgroud'
+
+                true_cls = gt[1]
+                label_wise_confuse[true_cls][det_cls] += 1
+        result = dict()
+        for label, confuse_dict in label_wise_confuse.items():
+            result[label] = [(k, v) for k, v in sorted(confuse_dict.items(), key=lambda item: item[1], reverse=True)]
+
+        return result
+
+
 def demo():
     pred_txt_dir = 'yolo_cls/runs/detect/exp/labels'
     truth_txt_dir = 'linmao_camera_data_real/labels/test'
     lm = label_map(pred_txt_dir, truth_txt_dir)
     lm.get_metrics(iou_threshold=0.5)
-    lm.get_metrics(iou_threshold=0.5)
+    lm.find_confuse_labels(iou_threshold=0.1, box_format='midpoint')
