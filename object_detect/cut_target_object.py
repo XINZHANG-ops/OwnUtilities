@@ -96,7 +96,7 @@ class crop_image:
                 print(ip_name, lp_name)
                 print("name doesn't match")
 
-    def crop(self, target_label, new_dir):
+    def crop(self, target_label, new_dir, clean=True):
         """
         This function will cut the target label image from
         if one image has multiple object the save name will be added (1) or (2) etc
@@ -109,6 +109,14 @@ class crop_image:
             pass
         else:
             os.makedirs(new_dir)
+
+        save_dir = os.path.join(new_dir, f'{target_label}')
+        if os.path.exists(save_dir):
+            if clean:
+                shutil.rmtree(save_dir)
+                os.makedirs(save_dir)
+        else:
+            os.mkdir(save_dir)
 
         for im_p, lb_p in tqdm(self.image_label_path_pair):
             img = Image.open(im_p)
@@ -143,13 +151,14 @@ class crop_image:
                     img2 = img.crop((top_left_x, top_left_y, bot_right_x, bot_right_y))
 
                     save_dir = os.path.join(new_dir, f'{label}')
-                    if os.path.exists(save_dir):
-                        pass
-                    else:
-                        os.mkdir(save_dir)
                     save_path = crop_image.uniquify(os.path.join(save_dir, im_p.split(os.sep)[-1]))
                     img2.save(save_path)
 
 
-
-def demo()
+def demo():
+    ci = crop_image('linmao_camera_data_real/images/train',
+                    expand_ratio_width=0.5,
+                    expand_ratio_hight=0.5,
+                    labels_dir='linmao_camera_data_real/labels/train',
+                    filter_diff=True)
+    ci.crop(5, 'target_image', True)
