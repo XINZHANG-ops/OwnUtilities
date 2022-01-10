@@ -108,7 +108,11 @@ def Recurrent_Network_classify(
     common_texts = [sentence.split(' ') for sentence in features]
     if embedding_type == 'ft':
         embedding_model = FastText(
-            vector_size=embedding_dim, window=3, min_count=1, sentences=common_texts, epochs=embedding_epoch
+            vector_size=embedding_dim,
+            window=3,
+            min_count=1,
+            sentences=common_texts,
+            epochs=embedding_epoch
         )
     elif embedding_type == 'w2v':
         embedding_model = Word2Vec(
@@ -206,7 +210,9 @@ def Recurrent_Network_classify(
         )
     )
     y_pred = list(
-        label_encoder.inverse_transform(np.argmax(model.predict(x_test), axis=1).astype(int).ravel())
+        label_encoder.inverse_transform(
+            np.argmax(model.predict(x_test), axis=1).astype(int).ravel()
+        )
     )
     f, cf = single_label_f_score(y_gold=y_test, y_pred=y_pred)
     if show_info:

@@ -1,11 +1,9 @@
 # requirement
 # original link
 # https://github.com/Isabek/XmlToTxt
-
 """
 declxml==0.9.1
 """
-
 """
 xml and txt are two formats of object detection labels, they are same labels just in different format
 
@@ -21,28 +19,38 @@ import declxml as xml
 
 class ObjectMapper(object):
     def __init__(self):
-        self.processor = xml.user_object("annotation", Annotation, [
-            xml.user_object("size", Size, [
-                xml.integer("width"),
-                xml.integer("height"),
-            ]),
-            xml.array(
-                xml.user_object("object", Object, [
-                    xml.string("name"),
-                    xml.user_object("bndbox", Box, [
-                        xml.floating_point("xmin"),
-                        xml.floating_point("ymin"),
-                        xml.floating_point("xmax"),
-                        xml.floating_point("ymax"),
-                    ], alias="box")
+        self.processor = xml.user_object(
+            "annotation", Annotation, [
+                xml.user_object("size", Size, [
+                    xml.integer("width"),
+                    xml.integer("height"),
                 ]),
-                alias="objects"
-            ),
-            xml.string("filename")
-        ])
+                xml.array(
+                    xml.user_object(
+                        "object", Object, [
+                            xml.string("name"),
+                            xml.user_object(
+                                "bndbox",
+                                Box, [
+                                    xml.floating_point("xmin"),
+                                    xml.floating_point("ymin"),
+                                    xml.floating_point("xmax"),
+                                    xml.floating_point("ymax"),
+                                ],
+                                alias="box"
+                            )
+                        ]
+                    ),
+                    alias="objects"
+                ),
+                xml.string("filename")
+            ]
+        )
 
     def bind(self, xml_file_path, xml_dir):
-        ann = xml.parse_from_file(self.processor, xml_file_path=os.path.join(xml_dir, xml_file_path))
+        ann = xml.parse_from_file(
+            self.processor, xml_file_path=os.path.join(xml_dir, xml_file_path)
+        )
         ann.filename = xml_file_path
         return ann
 
@@ -63,7 +71,9 @@ class Annotation(object):
         self.filename = None
 
     def __repr__(self):
-        return "Annotation(size={}, object={}, filename={})".format(self.size, self.objects, self.filename)
+        return "Annotation(size={}, object={}, filename={})".format(
+            self.size, self.objects, self.filename
+        )
 
 
 class Size(object):
@@ -92,7 +102,9 @@ class Box(object):
         self.ymax = None
 
     def __repr__(self):
-        return "Box(xmin={}, ymin={}, xmax={}, ymax={})".format(self.xmin, self.ymin, self.xmax, self.ymax)
+        return "Box(xmin={}, ymin={}, xmax={}, ymax={})".format(
+            self.xmin, self.ymin, self.xmax, self.ymax
+        )
 
 
 class Reader(object):
@@ -111,7 +123,8 @@ class Reader(object):
 
     @staticmethod
     def get_classes(filename):
-        with open(os.path.join(os.path.dirname(os.path.realpath('__file__')), filename), "r", encoding="utf8") as f:
+        with open(os.path.join(os.path.dirname(os.path.realpath('__file__')), filename), "r",
+                  encoding="utf8") as f:
             lines = f.readlines()
             return {value: key for (key, value) in enumerate(list(map(lambda x: x.strip(), lines)))}
 
@@ -139,7 +152,9 @@ class Transformer(object):
 
     def write_to_txt(self, annotations):
         for annotation in annotations:
-            output_path = os.path.join(self.out_dir, self.darknet_filename_format(annotation.filename))
+            output_path = os.path.join(
+                self.out_dir, self.darknet_filename_format(annotation.filename)
+            )
             if not os.path.exists(os.path.dirname(output_path)):
                 os.makedirs(os.path.dirname(output_path))
             with open(output_path, "w+") as f:
@@ -151,7 +166,7 @@ class Transformer(object):
             if self.label_map_exist:
                 int_label = self.inv_map[obj.name]
             else:
-                isin =  obj.name in self.all_classes
+                isin = obj.name in self.all_classes
                 if not isin:
                     self.all_classes.append(obj.name)
                 int_label = self.all_classes.index(obj.name)

@@ -11,6 +11,7 @@ from nltk.stem import WordNetLemmatizer
 from xin_util.Scores import single_label_f_score
 from sklearn.metrics import confusion_matrix
 
+
 def tf_idf_classify(
     input_df,
     feature_column,
@@ -40,7 +41,7 @@ def tf_idf_classify(
     stopwords = nltk.corpus.stopwords.words('english')
     lemmatizer = WordNetLemmatizer()
 
-    msk = np.random.rand(len(df)) < 1-test_size
+    msk = np.random.rand(len(df)) < 1 - test_size
     train_df = df[msk]
     val_df = df[~msk]
 
@@ -104,4 +105,3 @@ def tf_idf_classify(
         plt.title("TFIDF CONFUSION MATRIX", size=16)
     if return_fscore:
         return f, cf
-

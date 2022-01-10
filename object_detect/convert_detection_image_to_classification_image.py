@@ -9,7 +9,14 @@ import shutil
 
 
 class obj_to_cls:
-    def __init__(self, images_dir, expand_ratio_width=0.1, expand_ratio_hight=0.1, labels_dir=None, filter_diff=True):
+    def __init__(
+        self,
+        images_dir,
+        expand_ratio_width=0.1,
+        expand_ratio_hight=0.1,
+        labels_dir=None,
+        filter_diff=True
+    ):
         """
 
         @param images_dir: .jpg format images
@@ -49,8 +56,12 @@ class obj_to_cls:
         common_names = image_names.intersection(label_names)
 
         if filter_diff:
-            image_path = [i for i in image_path if os.path.splitext(i.split(os.sep)[-1])[0] in common_names]
-            label_path = [i for i in label_path if os.path.splitext(i.split(os.sep)[-1])[0] in common_names]
+            image_path = [
+                i for i in image_path if os.path.splitext(i.split(os.sep)[-1])[0] in common_names
+            ]
+            label_path = [
+                i for i in label_path if os.path.splitext(i.split(os.sep)[-1])[0] in common_names
+            ]
 
         image_path = sorted(image_path)
         label_path = sorted(label_path)
@@ -102,6 +113,7 @@ class obj_to_cls:
         @param new_dir:
         @return:
         """
+        epsilon = 1e-6  # in case of 0 values in x, y, w, h
 
         all_image_path = []
         for ip in self.image_path:
@@ -132,7 +144,7 @@ class obj_to_cls:
             for l in lines:
                 line_split = l.split(' ')
                 label = int(line_split[0])
-                x, y, w, h = tuple([float(i) for i in line_split[1:5]])
+                x, y, w, h = tuple([float(i) + epsilon for i in line_split[1:5]])
 
                 # change crop ratio
                 w = (1 + self.expand_ratio_width) * w
@@ -165,6 +177,7 @@ class obj_to_cls:
         @return:
         """
 
+        epsilon = 1e-6  # in case of 0 values in x, y, w, h
         all_image_path = []
         for ip in self.image_path:
             ip_idx = ip.split(os.sep).index(self.images_dir.split(os.sep)[-1])
@@ -192,7 +205,7 @@ class obj_to_cls:
                 lines = f.read().splitlines()
             for l in lines:
                 line_split = l.split(' ')
-                x, y, w, h = tuple([float(i) for i in line_split[1:5]])
+                x, y, w, h = tuple([float(i) + epsilon for i in line_split[1:5]])
 
                 # change crop ratio
                 w = (1 + self.expand_ratio_width) * w
@@ -207,7 +220,9 @@ class obj_to_cls:
                 img2 = img.crop((top_left_x, top_left_y, bot_right_x, bot_right_y))
 
                 ip_idx = im_p.split(os.sep).index(self.images_dir.split(os.sep)[-1])
-                save_dir = obj_to_cls.uniquify(os.path.join(new_dir, os.path.join(*im_p.split(os.sep)[1 + ip_idx:])))
+                save_dir = obj_to_cls.uniquify(
+                    os.path.join(new_dir, os.path.join(*im_p.split(os.sep)[1 + ip_idx:]))
+                )
                 img2.save(save_dir)
 
 

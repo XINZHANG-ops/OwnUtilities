@@ -34,7 +34,6 @@ nltk.download('punkt')
 nltk.download('words')
 nltk.download('stopwords')
 
-
 some_other_words = ['your exclude words']
 
 Englishtext = set(W.words())

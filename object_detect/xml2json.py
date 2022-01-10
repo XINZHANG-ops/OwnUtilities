@@ -29,8 +29,9 @@ def get_and_check(root, name, length):
     if len(vars) == 0:
         raise ValueError("Can not find %s in %s." % (name, root.tag))
     if length > 0 and len(vars) != length:
-        raise ValueError("The size of %s is supposed to be %d, but is %d." %
-                         (name, length, len(vars)))
+        raise ValueError(
+            "The size of %s is supposed to be %d, but is %d." % (name, length, len(vars))
+        )
     if length == 1:
         vars = vars[0]
     return vars
@@ -42,21 +43,24 @@ def get_filename_as_int(filename):
         filename = os.path.splitext(os.path.basename(filename))[0]
         return int(filename)
     except:
-        raise ValueError("Filename %s is supposed to be an integer." %
-                         (filename))
+        raise ValueError("Filename %s is supposed to be an integer." % (filename))
+
 
 class image_id_create:
     def __init__(self):
         self.image_id_map = dict()
         self.all_images = list()
+
     def add_image(self, file_name):
-        isin =  file_name in self.image_id_map
+        isin = file_name in self.image_id_map
         if not isin:
             self.all_images.append(file_name)
             int_label = self.all_images.index(file_name)
             self.image_id_map[file_name] = int_label
+
     def get_filename_as_int(self, filename):
         return self.image_id_map[filename]
+
 
 def get_categories(xml_files):
     """Generate category name to id mapping from a list of xml files.
@@ -82,17 +86,10 @@ def convert(xml_dir, json_file):
     xml_files = glob.glob(os.path.join(xml_dir, "*.xml"))
     # If you want to do train/test split, you can pass a subset of xml files to convert function.
     print("Number of xml files: {}".format(len(xml_files)))
-    
-    
-    
-    json_dict = {
-        "images": [],
-        "type": "instances",
-        "annotations": [],
-        "categories": []
-    }
+
+    json_dict = {"images": [], "type": "instances", "annotations": [], "categories": []}
     iic = image_id_create()
-    
+
     if PRE_DEFINE_CATEGORIES is not None:
         categories = PRE_DEFINE_CATEGORIES
     else:
@@ -108,12 +105,12 @@ def convert(xml_dir, json_file):
             filename = get_and_check(root, "filename", 1).text
         else:
             raise ValueError("%d paths found in %s" % (len(path), xml_file))
-        
+
         # Modified image id function
         iic.add_image(filename)
         image_id = iic.get_filename_as_int(filename)
-#         ## The filename must be a number
-#         image_id = get_filename_as_int(filename)
+        #         ## The filename must be a number
+        #         image_id = get_filename_as_int(filename)
         size = get_and_check(root, "size", 1)
         width = int(get_and_check(size, "width", 1).text)
         height = int(get_and_check(size, "height", 1).text)
@@ -166,7 +163,7 @@ def convert(xml_dir, json_file):
     json_fp.close()
     print("Success: {}".format(json_file))
 
-    
+
 # usage
 # where train is the folder contains xml files, the output json will be under train/ dir
 # convert('train', 'train/train_annotations.json')

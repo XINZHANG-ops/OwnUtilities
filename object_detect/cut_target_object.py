@@ -11,7 +11,7 @@ class crop_image:
     """
     simply crop one of label image from original image
     """
-    def __init__(self, images_dir, expand_ratio_width=0.1, expand_ratio_hight=0.1, labels_dir=None, filter_diff=True):
+    def __init__(self, expand_ratio_width=0.1, expand_ratio_hight=0.1):
         """
 
         @param images_dir: .jpg format images
@@ -20,48 +20,7 @@ class crop_image:
         @param labels_dir: txt format labels
         @param filter_diff: if filter image and label files with name doesn't match
         """
-        if labels_dir is None:
-            labels_dir = images_dir
 
-        image_path = []
-        label_path = []
-        image_names = set()
-        label_names = set()
-
-        for root, dirs, files in os.walk(images_dir):
-            for file in files:
-                if file.endswith(".jpg"):
-                    if 'checkpoint' in file:
-                        pass
-                    else:
-                        file_path = os.path.join(root, file)
-                        image_names.add(os.path.splitext(file_path.split(os.sep)[-1])[0])
-                        image_path.append(file_path)
-
-        for root, dirs, files in os.walk(labels_dir):
-            for file in files:
-                if file.endswith(".txt"):
-                    if 'checkpoint' in file:
-                        pass
-                    else:
-                        file_path = os.path.join(root, file)
-                        label_names.add(os.path.splitext(file_path.split(os.sep)[-1])[0])
-                        label_path.append(file_path)
-
-        common_names = image_names.intersection(label_names)
-
-        if filter_diff:
-            image_path = [i for i in image_path if os.path.splitext(i.split(os.sep)[-1])[0] in common_names]
-            label_path = [i for i in label_path if os.path.splitext(i.split(os.sep)[-1])[0] in common_names]
-
-        image_path = sorted(image_path)
-        label_path = sorted(label_path)
-
-        self.images_dir = images_dir
-        self.labels_dir = labels_dir
-        self.image_path = image_path
-        self.label_path = label_path
-        self.image_label_path_pair = list(zip(image_path, label_path))
         self.expand_ratio_width = expand_ratio_width
         self.expand_ratio_hight = expand_ratio_hight
 
@@ -96,7 +55,9 @@ class crop_image:
                 print(ip_name, lp_name)
                 print("name doesn't match")
 
-    def crop(self, target_label, new_dir, clean=True):
+    def crop(
+        self, target_label, new_dir, images_dir, labels_dir=None, filter_diff=True, clean=True
+    ):
         """
         This function will cut the target label image from
         if one image has multiple object the save name will be added (1) or (2) etc
@@ -104,6 +65,51 @@ class crop_image:
         @param new_dir:
         @return:
         """
+        epsilon = 1e-6  # in case of 0 values in x, y, w, h
+
+        if labels_dir is None:
+            labels_dir = images_dir
+
+        image_path = []
+        label_path = []
+        image_names = set()
+        label_names = set()
+
+        for root, dirs, files in os.walk(images_dir):
+            for file in files:
+                if file.endswith(".jpg"):
+                    if 'checkpoint' in file:
+                        pass
+                    else:
+                        file_path = os.path.join(root, file)
+                        image_names.add(os.path.splitext(file_path.split(os.sep)[-1])[0])
+                        image_path.append(file_path)
+
+        for root, dirs, files in os.walk(labels_dir):
+            for file in files:
+                if file.endswith(".txt"):
+                    if 'checkpoint' in file:
+                        pass
+                    else:
+                        file_path = os.path.join(root, file)
+                        label_names.add(os.path.splitext(file_path.split(os.sep)[-1])[0])
+                        label_path.append(file_path)
+
+        common_names = image_names.intersection(label_names)
+
+        if filter_diff:
+            image_path = [
+                i for i in image_path if os.path.splitext(i.split(os.sep)[-1])[0] in common_names
+            ]
+            label_path = [
+                i for i in label_path if os.path.splitext(i.split(os.sep)[-1])[0] in common_names
+            ]
+
+        image_path = sorted(image_path)
+        label_path = sorted(label_path)
+
+        image_label_path_pair = list(zip(image_path, label_path))
+
         target_label = int(target_label)
         if os.path.exists(new_dir):
             pass
@@ -118,7 +124,7 @@ class crop_image:
         else:
             os.mkdir(save_dir)
 
-        for im_p, lb_p in tqdm(self.image_label_path_pair):
+        for im_p, lb_p in tqdm(image_label_path_pair):
             img = Image.open(im_p)
             img_array = np.array(img)  # convert to np array
 
@@ -135,8 +141,7 @@ class crop_image:
                 label = int(line_split[0])
 
                 if label == target_label:
-
-                    x, y, w, h = tuple([float(i) for i in line_split[1:5]])
+                    x, y, w, h = tuple([float(i) + epsilon for i in line_split[1:5]])
 
                     # change crop ratio
                     w = (1 + self.expand_ratio_width) * w
@@ -156,9 +161,12 @@ class crop_image:
 
 
 def demo():
-    ci = crop_image('linmao_camera_data_real/images/train',
-                    expand_ratio_width=0.5,
-                    expand_ratio_hight=0.5,
-                    labels_dir='linmao_camera_data_real/labels/train',
-                    filter_diff=True)
-    ci.crop(5, 'target_image', True)
+    ci = crop_image(expand_ratio_width=0.5, expand_ratio_hight=0.5)
+    ci.crop(
+        target_label=5,
+        new_dir='target_image',
+        images_dir='linmao_camera_data_real/images/train',
+        labels_dir='linmao_camera_data_real/labels/train',
+        filter_diff=True,
+        clean=True
+    )

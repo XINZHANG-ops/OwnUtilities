@@ -52,8 +52,12 @@ def plot_box(images_dir, labels_dir, out_put_dir, thickness=3, filter_diff=True)
     common_names = image_names.intersection(label_names)
 
     if filter_diff:
-        image_path = [i for i in image_path if os.path.splitext(i.split(os.sep)[-1])[0] in common_names]
-        label_path = [i for i in label_path if os.path.splitext(i.split(os.sep)[-1])[0] in common_names]
+        image_path = [
+            i for i in image_path if os.path.splitext(i.split(os.sep)[-1])[0] in common_names
+        ]
+        label_path = [
+            i for i in label_path if os.path.splitext(i.split(os.sep)[-1])[0] in common_names
+        ]
 
     image_path = sorted(image_path)
     label_path = sorted(label_path)
@@ -81,11 +85,10 @@ def plot_box(images_dir, labels_dir, out_put_dir, thickness=3, filter_diff=True)
                 color = labels_colors[label]
             else:
                 color = list(np.random.choice(range(256), size=3))
-                color = (int (color [ 0 ]), int (color [ 1 ]), int (color [ 2 ]))
+                color = (int(color[0]), int(color[1]), int(color[2]))
                 labels_colors[label] = color
 
             x, y, w, h = tuple([float(i) for i in line_split[1:5]])
-
 
             # take max or min to make sure the crop is within the image
             top_left_x = max(math.floor(x * width - w * width / 2), 0)
@@ -93,8 +96,9 @@ def plot_box(images_dir, labels_dir, out_put_dir, thickness=3, filter_diff=True)
             bot_right_x = min(math.floor(x * width + w * width / 2), width)
             bot_right_y = min(math.floor(y * hight + h * hight / 2), hight)
 
-            img = cv2.rectangle(img, (top_left_x, top_left_y), (bot_right_x, bot_right_y), color, thickness)
-
+            img = cv2.rectangle(
+                img, (top_left_x, top_left_y), (bot_right_x, bot_right_y), color, thickness
+            )
             """
             cv2.putText(img,'Hello World!', 
                         bottomLeftCornerOfText, 
@@ -104,13 +108,9 @@ def plot_box(images_dir, labels_dir, out_put_dir, thickness=3, filter_diff=True)
                         thickness,
                         lineType)
                     """
-            cv2.putText(img, f'{label}',
-                        (top_left_x, top_left_y-10),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        1,
-                        color,
-                        thickness,
-                        2)
+            cv2.putText(
+                img, f'{label}', (top_left_x, top_left_y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, color,
+                thickness, 2
+            )
         image_name = ''.join(os.path.splitext(img_p.split(os.sep)[-1]))
         cv2.imwrite(os.path.join(out_put_dir, image_name), img)
-

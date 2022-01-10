@@ -53,9 +53,7 @@ def intersection_over_union(boxes_preds, boxes_labels, box_format="midpoint"):
     return intersection / (box1_area + box2_area - intersection + 1e-6)
 
 
-def mean_average_precision(
-        pred_boxes, true_boxes, iou_threshold=0.5, box_format="midpoint"
-):
+def mean_average_precision(pred_boxes, true_boxes, iou_threshold=0.5, box_format="midpoint"):
     """
     Calculates mean average precision
     Parameters:
@@ -119,9 +117,7 @@ def mean_average_precision(
         for detection_idx, detection in enumerate(detections):
             # Only take out the ground_truths that have the same
             # training idx as detection
-            ground_truth_img = [
-                bbox for bbox in ground_truths if bbox[0] == detection[0]
-            ]
+            ground_truth_img = [bbox for bbox in ground_truths if bbox[0] == detection[0]]
             num_gts = len(ground_truth_img)
             best_iou = 0
 
@@ -169,7 +165,6 @@ class label_map:
     def __init__(self, pred_txt_dir, truth_txt_dir):
         pred_boxes = []
         true_boxes = []
-
         """
         expect pred txt sequence:
         each txt contains rows like this:
@@ -205,7 +200,6 @@ class label_map:
                             line_split[5] = float(line_split[5])
                             line_split[6] = float(line_split[6])
                             pred_boxes.append(line_split)
-
         """
         expect true txt sequence:
         each txt contains rows like this:
@@ -247,10 +241,15 @@ class label_map:
         label_wise_precision, label_wise_recall, label_wise_ap = mean_average_precision(
             self.pred_boxes, self.true_boxes, iou_threshold=iou_threshold, box_format="midpoint"
         )
-        return {'precision': label_wise_precision, 'recall': label_wise_recall, 'average precision': label_wise_ap}
+        return {
+            'precision': label_wise_precision,
+            'recall': label_wise_recall,
+            'average precision': label_wise_ap
+        }
 
-
-    def find_confuse_labels(self, iou_threshold=0.1, pred_boxes=None, true_boxes=None, box_format='midpoint'):
+    def find_confuse_labels(
+        self, iou_threshold=0.1, pred_boxes=None, true_boxes=None, box_format='midpoint'
+    ):
         """
         This will give an idea of how model confused between each labels
 
@@ -261,7 +260,6 @@ class label_map:
         @return:
         """
         # do suggest put iou_threshold low since this is not a calculation for metrics
-
         """
         the iou_threshold still needed think of the case that, there is a true box in the image, but the true box doesn't 
         overlap any preidction box, which mean it is a missed object, so we want to capture this case. If we don't have an
@@ -298,7 +296,10 @@ class label_map:
                 label_wise_confuse[true_cls][det_cls] += 1
         result = dict()
         for label, confuse_dict in label_wise_confuse.items():
-            result[label] = [(k, v) for k, v in sorted(confuse_dict.items(), key=lambda item: item[1], reverse=True)]
+            result[label] = [
+                (k, v)
+                for k, v in sorted(confuse_dict.items(), key=lambda item: item[1], reverse=True)
+            ]
 
         return result
 
