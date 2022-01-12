@@ -148,7 +148,8 @@ class Transformer(object):
         xml_files = reader.get_xml_files()
         object_mapper = ObjectMapper()
         annotations = object_mapper.bind_files(xml_files, xml_dir=self.xml_dir)
-        self.write_to_txt(annotations)
+        if len(annotations) > 0:
+            self.write_to_txt(annotations)
 
     def write_to_txt(self, annotations):
         for annotation in annotations:
@@ -164,7 +165,10 @@ class Transformer(object):
         result = []
         for obj in annotation.objects:
             if self.label_map_exist:
-                int_label = self.inv_map[obj.name]
+                try:
+                    int_label = self.inv_map[obj.name]
+                except:
+                    continue
             else:
                 isin = obj.name in self.all_classes
                 if not isin:
@@ -201,12 +205,20 @@ class Transformer(object):
         return "%s.txt" % pre
 
 
-def convert(xml_dir, out_dir, label_map=None):
+def convert(xml_dir, out_dir, label_map=None, keep_empty=True):
     """
 
     @param xml_dir:
     @param out_dir:
     @param label_map: dict of int label map to label name, if None, will generate random mapping
+    it has two purposes,
+    1. when it is give it will use the label map give by the dict, so apply this method couple times won't
+       same label won't be mapped to different int labels
+    2. when lap_map dict only contains some of the labels, say all labels have [person, dog, cat], but label_map is
+       {person: 0, cat: 1}, and the data created will omit dog annotations, on other word, dog will be treated as
+       background
+
+    @keep_empty: we can remove .txt files if there is no label in it, but we do suggest have some images without labels
     @return:
     """
     if not os.path.exists(xml_dir):
@@ -222,6 +234,21 @@ def convert(xml_dir, out_dir, label_map=None):
 
     transformer = Transformer(xml_dir=xml_dir, out_dir=out_dir, label_map=label_map)
     transformer.transform()
+
+    if not keep_empty:
+        label_path = []
+        for root, dirs, files in os.walk(out_dir):
+            for file in files:
+                if file.endswith(".txt"):
+                    the_path = os.path.join(root, file)
+                    label_path.append(the_path)
+        for lb_p in label_path:
+            with open(lb_p) as f:
+                lines = f.read().splitlines()
+            if len(lines) >0:
+                continue
+            else:
+                os.remove(lb_p)
 
     return transformer.label_map
 
