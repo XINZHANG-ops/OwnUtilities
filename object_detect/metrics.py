@@ -164,7 +164,7 @@ def mean_average_precision(pred_boxes, true_boxes, iou_threshold=0.5, box_format
     return dict(label_wise_precision), dict(label_wise_recall), dict(label_wise_ap)
 
 
-class label_map:
+class label_metrics:
     def __init__(self, pred_txt_dir, truth_txt_dir):
         pred_boxes = []
         true_boxes = []
@@ -258,14 +258,17 @@ class label_map:
 
         @param pred_boxes: result from label_map class, list of boxes, if None, use self.pred_boxes
         @param true_boxes: result from label_map class, list of boxes, if None, use self.true_boxes
-        @param iou_threshold:
+        @param iou_threshold: do suggest put iou_threshold low since this is not a calculation for metrics
         @param box_format:
-        @return:
+        @return: where precision_result means how each prediction is mapped to true labels, keys are predicted labels
+                 values are count of that predict box's true label
+
+                 where recall_result means how each ground truth is mapped to prediction labels, keys are true labels
+                 values are count of that true box is predicted to
         """
-        # do suggest put iou_threshold low since this is not a calculation for metrics
         """
         the iou_threshold still needed think of the case that, there is a true box in the image, but the true box doesn't 
-        overlap any preidction box, which mean it is a missed object, so we want to capture this case. If we don't have an
+        overlap any prediction box, which mean it is a missed object, so we want to capture this case. If we don't have an
         iou_threshold, simply sorted by ious, then the true box actually doesn't match the sorted top predict box
     
         """
@@ -274,8 +277,11 @@ class label_map:
         if true_boxes is None:
             true_boxes = self.true_boxes
 
-        label_wise_confuse = nltk.defaultdict(lambda: nltk.defaultdict(int))
+        label_wise_confuse_recall = nltk.defaultdict(lambda: nltk.defaultdict(int))
+        label_wise_confuse_precision = nltk.defaultdict(lambda: nltk.defaultdict(int))
+
         all_img = list(set([i[0] for i in true_boxes]))
+
         for img in tqdm(all_img):
             img_pred = [i for i in pred_boxes if i[0] == img]
             img_gt = [i for i in true_boxes if i[0] == img]
@@ -293,23 +299,50 @@ class label_map:
                     match_pred_box = sorted(img_ious, key=lambda x: x[0], reverse=True)[0][1]
                     det_cls = match_pred_box[1]
                 else:
-                    det_cls = 'backgroud'
+                    det_cls = 'background'
 
                 true_cls = gt[1]
-                label_wise_confuse[true_cls][det_cls] += 1
-        result = dict()
-        for label, confuse_dict in label_wise_confuse.items():
-            result[label] = [
+                label_wise_confuse_recall[true_cls][det_cls] += 1
+
+            for det in img_pred:
+                img_ious = []
+                for gt in img_gt:
+                    iou = intersection_over_union(
+                        torch.tensor(det[3:]),
+                        torch.tensor(gt[3:]),
+                        box_format=box_format,
+                    )
+                    if iou >= iou_threshold:
+                        img_ious.append([iou, gt])
+                if img_ious:
+                    match_true_box = sorted(img_ious, key=lambda x: x[0], reverse=True)[0][1]
+                    true_cls = match_true_box[1]
+                else:
+                    true_cls = 'background'
+
+                det_cls = det[1]
+                label_wise_confuse_precision[det_cls][true_cls] += 1
+
+        recall_result = dict()
+        for label, confuse_dict in label_wise_confuse_recall.items():
+            recall_result[label] = [
                 (k, v)
                 for k, v in sorted(confuse_dict.items(), key=lambda item: item[1], reverse=True)
             ]
 
-        return result
+        precision_result = dict()
+        for label, confuse_dict in label_wise_confuse_precision.items():
+            precision_result[label] = [
+                (k, v)
+                for k, v in sorted(confuse_dict.items(), key=lambda item: item[1], reverse=True)
+            ]
+
+        return {'precision': precision_result, 'recall': recall_result}
 
 
 def demo():
     pred_txt_dir = 'yolo_cls/runs/detect/exp/labels'
     truth_txt_dir = 'linmao_camera_data_real/labels/test'
-    lm = label_map(pred_txt_dir, truth_txt_dir)
+    lm = label_metrics(pred_txt_dir, truth_txt_dir)
     lm.get_metrics(iou_threshold=0.5)
     lm.find_confuse_labels(iou_threshold=0.1, box_format='midpoint')
