@@ -7,6 +7,9 @@ import torch
 
 def intersection_over_union(boxes_preds, boxes_labels, box_format="midpoint"):
     """
+    boxes_preds = torch.tensor([9.26342e+02, 3.73585e+02, 9.73841e+02, 4.08305e+02])
+    boxes_labels = torch.tensor([9.26122e+02, 3.77460e+02, 9.71399e+02, 4.06312e+02])
+
     Calculates intersection over union
     Parameters:
         boxes_preds (tensor): Predictions of Bounding Boxes (BATCH_SIZE, 4)

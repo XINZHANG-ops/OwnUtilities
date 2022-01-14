@@ -82,7 +82,7 @@ def get_categories(xml_files):
     return {name: i for i, name in enumerate(classes_names)}
 
 
-def convert(xml_dir, json_file):
+def convert(xml_dir, json_file, origin_file_name=False):
     xml_files = glob.glob(os.path.join(xml_dir, "*.xml"))
     # If you want to do train/test split, you can pass a subset of xml files to convert function.
     print("Number of xml files: {}".format(len(xml_files)))
@@ -96,15 +96,19 @@ def convert(xml_dir, json_file):
         categories = get_categories(xml_files)
     bnd_id = START_BOUNDING_BOX_ID
     for xml_file in tqdm(xml_files):
+
         tree = ET.parse(xml_file)
         root = tree.getroot()
-        path = get(root, "path")
-        if len(path) == 1:
-            filename = os.path.basename(path[0].text)
-        elif len(path) == 0:
-            filename = get_and_check(root, "filename", 1).text
+        if origin_file_name:
+            path = get(root, "path")
+            if len(path) == 1:
+                filename = os.path.basename(path[0].text)
+            elif len(path) == 0:
+                filename = get_and_check(root, "filename", 1).text
+            else:
+                raise ValueError("%d paths found in %s" % (len(path), xml_file))
         else:
-            raise ValueError("%d paths found in %s" % (len(path), xml_file))
+            filename = xml_file.split(os.sep)[-1].split('.')[0]
 
         # Modified image id function
         iic.add_image(filename)
@@ -166,4 +170,4 @@ def convert(xml_dir, json_file):
 
 # usage
 # where train is the folder contains xml files, the output json will be under train/ dir
-# convert('train', 'train/train_annotations.json')
+# convert('train', 'train/train_annotations.json', origin_file_name=False)
