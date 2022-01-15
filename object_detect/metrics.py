@@ -155,7 +155,10 @@ def mean_average_precision(pred_boxes, true_boxes, iou_threshold=0.5, box_format
         precisions = torch.cat((torch.tensor([1]), precisions))
         recalls = torch.cat((torch.tensor([0]), recalls))
         # torch.trapz for numerical integration
-        label_wise_precision[c] = precisions.numpy()[-1]
+        if precisions.shape[0] == 1:  # this means we never predict for this label
+            label_wise_precision[c] = 0
+        else:
+            label_wise_precision[c] = precisions.numpy()[-1]
         label_wise_recall[c] = recalls.numpy()[-1]
         label_ap = float(torch.trapz(precisions, recalls))
         # average_precisions.append(label_ap)
@@ -251,7 +254,7 @@ class label_metrics:
         }
 
     def find_confuse_labels(
-        self, iou_threshold=0.1, pred_boxes=None, true_boxes=None, box_format='midpoint'
+            self, iou_threshold=0.1, pred_boxes=None, true_boxes=None, box_format='midpoint'
     ):
         """
         This will give an idea of how model confused between each labels
@@ -270,7 +273,7 @@ class label_metrics:
         the iou_threshold still needed think of the case that, there is a true box in the image, but the true box doesn't 
         overlap any prediction box, which mean it is a missed object, so we want to capture this case. If we don't have an
         iou_threshold, simply sorted by ious, then the true box actually doesn't match the sorted top predict box
-    
+
         """
         if pred_boxes is None:
             pred_boxes = self.pred_boxes
