@@ -1,7 +1,9 @@
+import nltk
 import os
 import numpy as np
 import math
 from tqdm import tqdm
+import random
 # image read libraries
 from PIL import Image
 import matplotlib.pyplot as plt
@@ -105,12 +107,14 @@ class obj_to_cls:
                 print(ip_name, lp_name)
                 print("name doesn't match")
 
-    def convert_to_classification_data(self, new_dir):
+    def convert_to_classification_data(self, new_dir, upsample=True, upsample_rate=0.1, seed=42):
         """
         This function will remain the original directory structure and create label-wise sub-folder,
         if one image has multiple object the save name will be added (1) or (2) etc
         @param self:
         @param new_dir:
+        @param upsample:
+        @param upsample_rate: what percentage has to be reached for low amount labels compare to the top 1 label
         @return:
         """
         epsilon = 1e-6  # in case of 0 values in x, y, w, h
@@ -129,6 +133,26 @@ class obj_to_cls:
         all_label_path = list(set(all_label_path))
         obj_to_cls.create_folder(new_dir, all_image_path)
 
+
+        label_appearance = nltk.defaultdict(int)
+        label_shortage = nltk.defaultdict(int)
+        label_source = nltk.defaultdict(list)
+
+        for im_p, lb_p in tqdm(self.image_label_path_pair):
+            with open(lb_p) as f:
+                lines = f.read().splitlines()
+
+            for l in lines:
+                line_split = l.split(' ')
+                label = int(line_split[0])
+                label_appearance[label] += 1
+
+        top_label_count = max(label_appearance.values())
+        for label, count in label_appearance.items():
+            short_amount = max(int(upsample_rate * top_label_count) - count, 0)
+            label_shortage[label] = short_amount
+
+        print('prepare original data...')
         for im_p, lb_p in tqdm(self.image_label_path_pair):
             img = Image.open(im_p)
             img_array = np.array(img)  # convert to np array
@@ -144,6 +168,7 @@ class obj_to_cls:
             for l in lines:
                 line_split = l.split(' ')
                 label = int(line_split[0])
+                label_appearance[label] += 1
                 x, y, w, h = tuple([float(i) + epsilon for i in line_split[1:5]])
 
                 # change crop ratio
@@ -155,6 +180,8 @@ class obj_to_cls:
                 top_left_y = max(math.floor(y * hight - h * hight / 2), 0)
                 bot_right_x = min(math.floor(x * width + w * width / 2), width)
                 bot_right_y = min(math.floor(y * hight + h * hight / 2), hight)
+
+                label_source[label].append([im_p, [top_left_x, top_left_y, bot_right_x, bot_right_y]])
 
                 img2 = img.crop((top_left_x, top_left_y, bot_right_x, bot_right_y))
 
@@ -168,62 +195,32 @@ class obj_to_cls:
                 save_path = obj_to_cls.uniquify(os.path.join(save_dir, im_p.split(os.sep)[-1]))
                 img2.save(save_path)
 
-    def convert_to_classification_data_same_structure(self, new_dir):
-        """
-        This function will remain the original directory structure and if one image has multiple object
-        the save name will be added (1) or (2) etc
-        @param self:
-        @param new_dir:
-        @return:
-        """
+        if upsample:
+            print('upsampling data...')
+            random.seed(seed)
+            for label, short_amount in tqdm(label_shortage.items()):
+                sample_source = label_source[label]
+                random_source = random.choices(sample_source, k=short_amount)
+                for im_p, loaction in random_source:
+                    top_left_x, top_left_y, bot_right_x, bot_right_y = loaction[0], loaction[1], loaction[2], loaction[3]
+                    img = Image.open(im_p)
+                    img2 = img.crop((top_left_x, top_left_y, bot_right_x, bot_right_y))
 
-        epsilon = 1e-6  # in case of 0 values in x, y, w, h
-        all_image_path = []
-        for ip in self.image_path:
-            ip_idx = ip.split(os.sep).index(self.images_dir.split(os.sep)[-1])
-            all_image_path.append(os.path.join(*ip.split(os.sep)[ip_idx + 1:-1]))
+                    ip_idx = im_p.split(os.sep).index(self.images_dir.split(os.sep)[-1])
 
-        all_label_path = []
-        for lp in self.label_path:
-            lp_idx = lp.split(os.sep).index(self.labels_dir.split(os.sep)[-1])
-            all_label_path.append(os.path.join(*lp.split(os.sep)[lp_idx + 1:-1]))
+                    save_dir = os.path.join(new_dir, *im_p.split(os.sep)[1 + ip_idx:-1], f'{label}')
+                    if os.path.exists(save_dir):
+                        pass
+                    else:
+                        os.mkdir(save_dir)
+                    save_path = obj_to_cls.uniquify(os.path.join(save_dir, im_p.split(os.sep)[-1]))
+                    img2.save(save_path)
 
-        all_image_path = list(set(all_image_path))
-        all_label_path = list(set(all_label_path))
-        obj_to_cls.create_folder(new_dir, all_image_path)
+        label_final_label_appearance = dict()
+        for label, count in label_appearance.items():
+            label_final_label_appearance[label] = count + label_shortage[label]
 
-        for im_p, lb_p in tqdm(self.image_label_path_pair):
-            img = Image.open(im_p)
-            img_array = np.array(img)  # convert to np array
-
-            # Note that some pictures doesn't have channel
-            try:
-                hight, width, channel = img_array.shape
-            except:
-                hight, width = img_array.shape
-            with open(lb_p) as f:
-                lines = f.read().splitlines()
-            for l in lines:
-                line_split = l.split(' ')
-                x, y, w, h = tuple([float(i) + epsilon for i in line_split[1:5]])
-
-                # change crop ratio
-                w = (1 + self.expand_ratio_width) * w
-                h = (1 + self.expand_ratio_hight) * h
-
-                # take max or min to make sure the crop is within the image
-                top_left_x = max(math.floor(x * width - w * width / 2), 0)
-                top_left_y = max(math.floor(y * hight - h * hight / 2), 0)
-                bot_right_x = min(math.floor(x * width + w * width / 2), width)
-                bot_right_y = min(math.floor(y * hight + h * hight / 2), hight)
-
-                img2 = img.crop((top_left_x, top_left_y, bot_right_x, bot_right_y))
-
-                ip_idx = im_p.split(os.sep).index(self.images_dir.split(os.sep)[-1])
-                save_dir = obj_to_cls.uniquify(
-                    os.path.join(new_dir, os.path.join(*im_p.split(os.sep)[1 + ip_idx:]))
-                )
-                img2.save(save_dir)
+        return label_appearance, label_final_label_appearance
 
 
 def demo():
@@ -233,4 +230,3 @@ def demo():
     print('check if image and label are 1 to 1')
     obj2cls.test_if_unique_data_pairs()
     obj2cls.convert_to_classification_data('coco128_classification')
-    obj2cls.convert_to_classification_data_same_structure('coco128_classification2')

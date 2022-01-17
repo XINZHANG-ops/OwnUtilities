@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='xin_util',
-    version='1.4.26',
+    version='1.4.27',
     author="Xin Zhang",
     author_email="1528371521zx@gmail.com",
     description="Xin's self created helper functions",
