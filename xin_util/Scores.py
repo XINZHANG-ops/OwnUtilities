@@ -229,11 +229,21 @@ def single_label_f_score(y_pred, y_gold):
             F_score = 2 * precision * recall / (precision + recall)
         except:
             F_score = 0
-        labels_f_score[label] = F_score
-    SUM = 0
-    for l, Fscore in labels_f_score.items():
-        SUM += Fscore
-    total_score = SUM / len(labels_f_score)
+
+        labels_f_score[label] = {'f1': F_score, 'precision': precision, 'recall': recall}
+
+    all_f1 = 0
+    all_precision = 0
+    all_recall = 0
+    for label, scores in labels_f_score.items():
+        f1 = scores['f1']
+        precision = scores['precision']
+        recall = scores['recall']
+        all_f1 += f1
+        all_precision += precision
+        all_recall += recall
+
+    total_score = {'f1': all_f1 / len(labels_f_score), 'precision': all_precision / len(labels_f_score), 'recall': all_recall / len(labels_f_score)}
     return total_score, labels_f_score
 
 
