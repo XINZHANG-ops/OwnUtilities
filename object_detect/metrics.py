@@ -283,6 +283,7 @@ class label_metrics:
 
         label_all_precisions = nltk.defaultdict(list)
         label_all_recalls = nltk.defaultdict(list)
+        label_all_f1 = nltk.defaultdict(list)
         label_all_aps = nltk.defaultdict(list)
         label_rows = nltk.defaultdict(list)
 
@@ -290,7 +291,10 @@ class label_metrics:
 
         for iou_threshold in iou_thresholds:
             print(f'processing IoU@{iou_threshold}')
-            column_names.extend([f'P@{iou_threshold}', f'R@{iou_threshold}', f'AP@{iou_threshold}'])
+            column_names.extend([
+                f'P@{iou_threshold}', f'R@{iou_threshold}', f'F1@{iou_threshold}',
+                f'AP@{iou_threshold}'
+            ])
             label_wise_precision, label_wise_recall, label_wise_ap, label_wise_pr_curve = mean_average_precision(
                 self.pred_boxes,
                 self.true_boxes,
@@ -315,7 +319,7 @@ class label_metrics:
                 plt.gca().set_aspect('equal')
             plt.plot([0, 1], [0, 1], '--', linewidth=3, color='red')
             plt.legend(fontsize=25, loc='lower right')
-            plt.title(f'precision-recall IoU={iou_threshold}')
+            plt.title(f'precision-recall IoU={iou_threshold}', fontsize=30)
             plt.savefig(os.path.join(output_dir, f'precision-recall IoU={iou_threshold}.png'))
             plt.close()
 
@@ -327,17 +331,20 @@ class label_metrics:
             for label in label_names:
                 label_p = label_wise_precision[label]
                 label_r = label_wise_recall[label]
+                label_f1 = 0.5 * label_p + 0.5 * label_r
                 label_ap = label_wise_ap[label]
                 label_all_precisions[label].append(label_p)
                 label_all_recalls[label].append(label_r)
+                label_all_f1[label].append(label_f1)
                 label_all_aps[label].append(label_ap)
-                label_rows[label].extend([label_p, label_r, label_ap])
+                label_rows[label].extend([label_p, label_r, label_f1, label_ap])
 
-        column_names.extend([f'P@All', f'R@All', f'AP@All'])
+        column_names.extend([f'P@All', f'R@All', f'F1@All', f'AP@All'])
         for label in label_names:
             row = label_rows[label] + [
                 sum(label_all_precisions[label]) / len(label_all_precisions[label]),
                 sum(label_all_recalls[label]) / len(label_all_recalls[label]),
+                sum(label_all_f1[label]) / len(label_all_f1[label]),
                 sum(label_all_aps[label]) / len(label_all_aps[label])
             ]
 
