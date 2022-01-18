@@ -133,7 +133,6 @@ class obj_to_cls:
         all_label_path = list(set(all_label_path))
         obj_to_cls.create_folder(new_dir, all_image_path)
 
-
         label_appearance = nltk.defaultdict(int)
         label_shortage = nltk.defaultdict(int)
         label_source = nltk.defaultdict(list)
@@ -181,7 +180,9 @@ class obj_to_cls:
                 bot_right_x = min(math.floor(x * width + w * width / 2), width)
                 bot_right_y = min(math.floor(y * hight + h * hight / 2), hight)
 
-                label_source[label].append([im_p, [top_left_x, top_left_y, bot_right_x, bot_right_y]])
+                label_source[label].append([
+                    im_p, [top_left_x, top_left_y, bot_right_x, bot_right_y]
+                ])
 
                 img2 = img.crop((top_left_x, top_left_y, bot_right_x, bot_right_y))
 
@@ -202,7 +203,8 @@ class obj_to_cls:
                 sample_source = label_source[label]
                 random_source = random.choices(sample_source, k=short_amount)
                 for im_p, loaction in random_source:
-                    top_left_x, top_left_y, bot_right_x, bot_right_y = loaction[0], loaction[1], loaction[2], loaction[3]
+                    top_left_x, top_left_y, bot_right_x, bot_right_y = loaction[0], loaction[
+                        1], loaction[2], loaction[3]
                     img = Image.open(im_p)
                     img2 = img.crop((top_left_x, top_left_y, bot_right_x, bot_right_y))
 

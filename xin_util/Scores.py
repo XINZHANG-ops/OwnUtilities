@@ -243,7 +243,11 @@ def single_label_f_score(y_pred, y_gold):
         all_precision += precision
         all_recall += recall
 
-    total_score = {'f1': all_f1 / len(labels_f_score), 'precision': all_precision / len(labels_f_score), 'recall': all_recall / len(labels_f_score)}
+    total_score = {
+        'f1': all_f1 / len(labels_f_score),
+        'precision': all_precision / len(labels_f_score),
+        'recall': all_recall / len(labels_f_score)
+    }
     return total_score, labels_f_score
 
 

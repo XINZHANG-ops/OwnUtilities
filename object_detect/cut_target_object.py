@@ -63,6 +63,7 @@ class crop_image:
         if one image has multiple object the save name will be added (1) or (2) etc
         @param self:
         @param new_dir:
+        @param clean: will clear the output dir if it exist
         @return:
         """
         epsilon = 1e-6  # in case of 0 values in x, y, w, h
@@ -162,6 +163,7 @@ class crop_image:
 
 def demo():
     ci = crop_image(expand_ratio_width=0.5, expand_ratio_hight=0.5)
+    # clean will clear the output dir if it exist
     ci.crop(
         target_label=5,
         new_dir='target_image',

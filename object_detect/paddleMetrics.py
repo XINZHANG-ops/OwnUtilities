@@ -1,4 +1,3 @@
-import os
 from collections import Counter
 import nltk
 from tqdm import tqdm
@@ -6,6 +5,176 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import logging
+import os
+import declxml as xml
+import json
+
+# requirement
+"""
+declxml==0.9.1
+"""
+"""
+xml and txt are two formats of object detection labels, they are same labels just in different format
+
+different models take different format as input
+
+"""
+
+
+class ObjectMapper(object):
+    def __init__(self):
+        self.processor = xml.user_object(
+            "annotation", Annotation, [
+                xml.user_object("size", Size, [
+                    xml.integer("width"),
+                    xml.integer("height"),
+                ]),
+                xml.array(
+                    xml.user_object(
+                        "object", Object, [
+                            xml.string("name"),
+                            xml.user_object(
+                                "bndbox",
+                                Box, [
+                                    xml.floating_point("xmin"),
+                                    xml.floating_point("ymin"),
+                                    xml.floating_point("xmax"),
+                                    xml.floating_point("ymax"),
+                                ],
+                                alias="box"
+                            )
+                        ]
+                    ),
+                    alias="objects"
+                ),
+                xml.string("filename")
+            ]
+        )
+
+    def bind(self, xml_file_path, xml_dir):
+        ann = xml.parse_from_file(
+            self.processor, xml_file_path=os.path.join(xml_dir, xml_file_path)
+        )
+        ann.filename = xml_file_path
+        return ann
+
+    def bind_files(self, xml_file_paths, xml_dir):
+        result = []
+        for xml_file_path in xml_file_paths:
+            try:
+                result.append(self.bind(xml_file_path=xml_file_path, xml_dir=xml_dir))
+            except Exception as e:
+                logging.error("%s", e.args)
+        return result
+
+
+class Annotation(object):
+    def __init__(self):
+        self.size = None
+        self.objects = None
+        self.filename = None
+
+    def __repr__(self):
+        return "Annotation(size={}, object={}, filename={})".format(
+            self.size, self.objects, self.filename
+        )
+
+
+class Size(object):
+    def __init__(self):
+        self.width = None
+        self.height = None
+
+    def __repr__(self):
+        return "Size(width={}, height={})".format(self.width, self.height)
+
+
+class Object(object):
+    def __init__(self):
+        self.name = None
+        self.box = None
+
+    def __repr__(self):
+        return "Object(name={}, box={})".format(self.name, self.box)
+
+
+class Box(object):
+    def __init__(self):
+        self.xmin = None
+        self.ymin = None
+        self.xmax = None
+        self.ymax = None
+
+    def __repr__(self):
+        return "Box(xmin={}, ymin={}, xmax={}, ymax={})".format(
+            self.xmin, self.ymin, self.xmax, self.ymax
+        )
+
+
+class Reader(object):
+    def __init__(self, xml_dir):
+        self.xml_dir = xml_dir
+
+    def get_xml_files(self):
+        xml_filenames = []
+        for root, subdirectories, files in os.walk(self.xml_dir):
+            for filename in files:
+                if filename.endswith(".xml"):
+                    file_path = os.path.join(root, filename)
+                    file_path = os.path.relpath(file_path, start=self.xml_dir)
+                    xml_filenames.append(file_path)
+        return xml_filenames
+
+
+class Transformer(object):
+    def __init__(self, xml_dir):
+        self.xml_dir = xml_dir
+        self.label_map = dict()
+        self.all_classes = list()
+        self.label_map_exist = False
+
+    def transform(self):
+        reader = Reader(xml_dir=self.xml_dir)
+        xml_files = reader.get_xml_files()
+
+        object_mapper = ObjectMapper()
+        annotations = object_mapper.bind_files(xml_files, xml_dir=self.xml_dir)
+        if len(annotations) > 0:
+            return self.get_boxes(annotations)
+
+    def get_boxes(self, annotations):
+        # each annotation is all boxes in an image
+        all_boxes = []
+        for annotation in annotations:
+            file_name = self.darknet_filename_format(annotation.filename)
+            all_boxes.extend(self.to_darknet_format(annotation, file_name))
+        return all_boxes
+
+    def to_darknet_format(self, annotation, image_name):
+        result = []
+        for obj in annotation.objects:
+            label_name = obj.name
+            x1, y1, x2, y2 = self.get_object_params(obj)
+            box = [image_name, label_name, 1, x1, y1, x2, y2]
+            result.append(box)
+        return result
+
+    @staticmethod
+    def get_object_params(obj):
+        box = obj.box
+        x = box.xmin + 0.5 * (box.xmax - box.xmin)
+        y = box.ymin + 0.5 * (box.ymax - box.ymin)
+
+        width = box.xmax - box.xmin
+        height = box.ymax - box.ymin
+
+        return int(x), int(y), int(width), int(height)
+
+    @staticmethod
+    def darknet_filename_format(filename):
+        pre, ext = os.path.splitext(filename)
+        return pre
 
 
 def intersection_over_union(boxes_preds, boxes_labels, box_format="midpoint"):
@@ -188,77 +357,28 @@ def mean_average_precision(
 
 
 class label_metrics:
-    def __init__(self, pred_txt_dir, truth_txt_dir):
+    def __init__(self, pred_json_path, truth_xml_dir, conf_threshold=0.25):
+        xml_transformer = Transformer(truth_xml_dir)
+        true_boxes = xml_transformer.transform()
+
+        with open(pred_json_path) as json_file:
+            predictions = json.load(json_file)
+
         pred_boxes = []
-        true_boxes = []
-        """
-        expect pred txt sequence:
-        each txt contains rows like this:
-
-        8 0.529688 0.829167 0.078125 0.0444444 0.893442
-        8 0.723828 0.816667 0.103906 0.0694444 0.905974
-        8 0.95 0.778472 0.0921875 0.0708333 0.911328
-        0 0.103125 0.111806 0.110937 0.118056 0.935599
-
-        with 
-
-        int_class x y w h conf
-        """
-
-        for root, dirs, files in os.walk(pred_txt_dir):
-            for file in files:
-                if file.endswith(".txt"):
-                    the_path = os.path.join(root, file)
-                    if 'checkpoint' not in the_path:
-                        file_name = the_path.split(os.sep)[-1].split('.')[0]
-                        with open(the_path) as f:
-                            lines = f.read().splitlines()
-                        for l in lines:
-                            line_split = l.split(' ')
-                            line_split.insert(0, file_name)
-                            conf = line_split[-1]
-                            line_split.insert(2, conf)
-                            line_split = line_split[:-1]
-                            line_split[1] = int(line_split[1])
-                            line_split[2] = float(line_split[2])
-                            line_split[3] = float(line_split[3])
-                            line_split[4] = float(line_split[4])
-                            line_split[5] = float(line_split[5])
-                            line_split[6] = float(line_split[6])
-                            pred_boxes.append(line_split)
-        """
-        expect true txt sequence:
-        each txt contains rows like this:
-
-        0 0.104297 0.107639 0.110156 0.120833
-        8 0.724219 0.818056 0.098437 0.069444
-        8 0.949219 0.784028 0.089063 0.081944
-        8 0.530078 0.831250 0.075781 0.048611
-
-        with 
-
-        int_class x y w h
-        """
-
-        for root, dirs, files in os.walk(truth_txt_dir):
-            for file in files:
-                if file.endswith(".txt"):
-                    the_path = os.path.join(root, file)
-                    if 'checkpoint' not in the_path:
-                        file_name = the_path.split(os.sep)[-1].split('.')[0]
-                        with open(the_path) as f:
-                            lines = f.read().splitlines()
-                        for l in lines:
-                            line_split = l.split(' ')
-                            line_split.insert(0, file_name)
-                            line_split.insert(2, 1)
-                            line_split[1] = int(line_split[1])
-                            line_split[2] = float(line_split[2])
-                            line_split[3] = float(line_split[3])
-                            line_split[4] = float(line_split[4])
-                            line_split[5] = float(line_split[5])
-                            line_split[6] = float(line_split[6])
-                            true_boxes.append(line_split)
+        file_names = [i.split('.')[0] for i in predictions['names']]
+        for idx, img_pred in enumerate(predictions['results']):
+            name = file_names[idx]
+            for box_pred in img_pred:
+                bbox = box_pred['bbox']
+                conf = box_pred['score']
+                label_name = box_pred['category']
+                x = bbox[0]
+                y = bbox[1]
+                box_w = bbox[2]
+                box_h = bbox[3]
+                x1, y1, w, h = x + box_w / 2, y + box_h / 2, int(box_w), int(box_h)
+                if conf >= conf_threshold:
+                    pred_boxes.append([name, label_name, conf, x1, y1, w, h])
 
         self.pred_boxes = pred_boxes
         self.true_boxes = true_boxes
@@ -315,7 +435,7 @@ class label_metrics:
                 plt.gca().set_aspect('equal')
             plt.plot([0, 1], [0, 1], '--', linewidth=3, color='red')
             plt.legend(fontsize=25, loc='lower right')
-            plt.title(f'precision-recall IoU={iou_threshold}')
+            plt.title(f'precision-recall IoU={iou_threshold}', fontsize=30)
             plt.savefig(os.path.join(output_dir, f'precision-recall IoU={iou_threshold}.png'))
             plt.close()
 
@@ -351,100 +471,3 @@ class label_metrics:
         df.to_csv('summary.csv')
         df.to_csv(os.path.join(output_dir, 'summary.csv'), index=False)
         return df
-
-    def find_confuse_labels(
-        self, iou_threshold=0.1, pred_boxes=None, true_boxes=None, box_format='midpoint'
-    ):
-        """
-        This will give an idea of how model confused between each labels
-
-        @param pred_boxes: result from label_map class, list of boxes, if None, use self.pred_boxes
-        @param true_boxes: result from label_map class, list of boxes, if None, use self.true_boxes
-        @param iou_threshold: do suggest put iou_threshold low since this is not a calculation for metrics
-        @param box_format:
-        @return: where precision_result means how each prediction is mapped to true labels, keys are predicted labels
-                 values are count of that predict box's true label
-
-                 where recall_result means how each ground truth is mapped to prediction labels, keys are true labels
-                 values are count of that true box is predicted to
-        """
-        """
-        the iou_threshold still needed think of the case that, there is a true box in the image, but the true box doesn't 
-        overlap any prediction box, which mean it is a missed object, so we want to capture this case. If we don't have an
-        iou_threshold, simply sorted by ious, then the true box actually doesn't match the sorted top predict box
-
-        """
-        if pred_boxes is None:
-            pred_boxes = self.pred_boxes
-        if true_boxes is None:
-            true_boxes = self.true_boxes
-
-        label_wise_confuse_recall = nltk.defaultdict(lambda: nltk.defaultdict(int))
-        label_wise_confuse_precision = nltk.defaultdict(lambda: nltk.defaultdict(int))
-
-        all_img = list(set([i[0] for i in true_boxes]))
-
-        for img in tqdm(all_img):
-            img_pred = [i for i in pred_boxes if i[0] == img]
-            img_gt = [i for i in true_boxes if i[0] == img]
-            for gt in img_gt:
-                img_ious = []
-                for det in img_pred:
-                    iou = intersection_over_union(
-                        torch.tensor(det[3:]),
-                        torch.tensor(gt[3:]),
-                        box_format=box_format,
-                    )
-                    if iou >= iou_threshold:
-                        img_ious.append([iou, det])
-                if img_ious:
-                    match_pred_box = sorted(img_ious, key=lambda x: x[0], reverse=True)[0][1]
-                    det_cls = match_pred_box[1]
-                else:
-                    det_cls = 'background'
-
-                true_cls = gt[1]
-                label_wise_confuse_recall[true_cls][det_cls] += 1
-
-            for det in img_pred:
-                img_ious = []
-                for gt in img_gt:
-                    iou = intersection_over_union(
-                        torch.tensor(det[3:]),
-                        torch.tensor(gt[3:]),
-                        box_format=box_format,
-                    )
-                    if iou >= iou_threshold:
-                        img_ious.append([iou, gt])
-                if img_ious:
-                    match_true_box = sorted(img_ious, key=lambda x: x[0], reverse=True)[0][1]
-                    true_cls = match_true_box[1]
-                else:
-                    true_cls = 'background'
-
-                det_cls = det[1]
-                label_wise_confuse_precision[det_cls][true_cls] += 1
-
-        recall_result = dict()
-        for label, confuse_dict in label_wise_confuse_recall.items():
-            recall_result[label] = [
-                (k, v)
-                for k, v in sorted(confuse_dict.items(), key=lambda item: item[1], reverse=True)
-            ]
-
-        precision_result = dict()
-        for label, confuse_dict in label_wise_confuse_precision.items():
-            precision_result[label] = [
-                (k, v)
-                for k, v in sorted(confuse_dict.items(), key=lambda item: item[1], reverse=True)
-            ]
-
-        return {'precision': precision_result, 'recall': recall_result}
-
-
-def demo():
-    pred_txt_dir = 'yolo_cls/runs/detect/exp/labels'
-    truth_txt_dir = 'linmao_camera_data_real/labels/test'
-    lm = label_metrics(pred_txt_dir, truth_txt_dir)
-    lm.get_metrics(iou_thresholds=[0.5, 0.7, 0.9], interpolate_pr=True)
-    lm.find_confuse_labels(iou_threshold=0.1, box_format='midpoint')

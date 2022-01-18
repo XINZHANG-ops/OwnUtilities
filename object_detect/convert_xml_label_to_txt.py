@@ -142,7 +142,6 @@ class Transformer(object):
             self.all_classes = list(label_map.values())
             self.label_map_exist = True
 
-
     def transform(self):
         reader = Reader(xml_dir=self.xml_dir)
         xml_files = reader.get_xml_files()
@@ -174,7 +173,7 @@ class Transformer(object):
                 if not isin:
                     self.all_classes.append(obj.name)
                 int_label = self.all_classes.index(obj.name)
-                self.label_map[obj.name] =  int_label
+                self.label_map[obj.name] = int_label
 
             x, y, width, height = self.get_object_params(obj, annotation.size)
             result.append("%d %.6f %.6f %.6f %.6f" % (int_label, x, y, width, height))
@@ -245,7 +244,7 @@ def convert(xml_dir, out_dir, label_map=None, keep_empty=True):
         for lb_p in label_path:
             with open(lb_p) as f:
                 lines = f.read().splitlines()
-            if len(lines) >0:
+            if len(lines) > 0:
                 continue
             else:
                 os.remove(lb_p)
@@ -256,14 +255,16 @@ def convert(xml_dir, out_dir, label_map=None, keep_empty=True):
 def demo():
     xml_data_dir = 'linmao_camera_data'
     output_txt_data_dir = 'linmao_camera_data_txt'
-    label_map = {'nl_0438': 0,
-                 'nl_0431': 1,
-                 'nl_0239': 2,
-                 'nl_0238': 3,
-                 'nl_0271': 4,
-                 'nl_0280': 5,
-                 'nl_0433': 6,
-                 'nl_0224': 7,
-                 'nl_0098': 8}
+    label_map = {
+        'nl_0438': 0,
+        'nl_0431': 1,
+        'nl_0239': 2,
+        'nl_0238': 3,
+        'nl_0271': 4,
+        'nl_0280': 5,
+        'nl_0433': 6,
+        'nl_0224': 7,
+        'nl_0098': 8
+    }
     label_map = convert(xml_data_dir, output_txt_data_dir, label_map)
     print(label_map)
