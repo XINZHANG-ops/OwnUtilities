@@ -355,7 +355,6 @@ class label_metrics:
 
         df = pd.DataFrame(table_result, columns=column_names)
         df.insert(0, "label", label_names + ['All'])
-        df.to_csv('summary.csv')
         df.to_csv(os.path.join(output_dir, 'summary.csv'), index=False)
         return df
 

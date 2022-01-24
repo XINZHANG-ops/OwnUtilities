@@ -475,6 +475,50 @@ class label_metrics:
 
         df = pd.DataFrame(table_result, columns=column_names)
         df.insert(0, "label", label_names + ['All'])
-        df.to_csv('summary.csv')
         df.to_csv(os.path.join(output_dir, 'summary.csv'), index=False)
         return df
+
+
+if __name__ == '__main__':
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--pred',
+        type=str,
+        default='PPYOLOv2_prediction.json',
+        help='path to prediction json',
+        required=True
+    )
+
+    parser.add_argument(
+        '--label',
+        type=str,
+        default='linmao-test/Annotations',
+        help='xml labels directory',
+        required=True
+    )
+
+    parser.add_argument('--conf', type=float, default=0.25, help='threshold for confidence')
+
+    parser.add_argument(
+        '--ious', '--list', nargs='+', default=[0.5, 0.7, 0.9], help='thresholds for iou'
+    )
+
+    parser.add_argument('--output', default='eval_results', help='output directory for results')
+
+    parser.add_argument(
+        '--no-interpolate', action='store_false', help='if to interpolate pr curve for plots'
+    )
+
+    args = parser.parse_args()
+
+    prediction_path = args.pred
+    label_dir = args.label
+    conf_thres = args.conf
+    ious = [float(i) for i in args.ious]
+    output_dir = args.output
+    interpolate = args.no_interpolate
+
+    lm = label_metrics(prediction_path, label_dir, conf_threshold=conf_thres)
+    lm.get_metrics(iou_thresholds=ious, interpolate_pr=interpolate, output_dir=output_dir)
