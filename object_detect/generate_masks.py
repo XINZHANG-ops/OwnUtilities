@@ -12,6 +12,17 @@ import shutil
 
 def create_mask_for_object(img_dir, label_dir, save_dir, expand_ratio_width=0, expand_ratio_hight=0, img_type='jpg',
                 save_type='png'):
+    """
+    This function will make where there is a box as mask
+    @param img_dir:
+    @param label_dir:
+    @param save_dir:
+    @param expand_ratio_width:
+    @param expand_ratio_hight:
+    @param img_type:
+    @param save_type:
+    @return:
+    """
     image_path = []
     label_path = []
     os.makedirs(save_dir, exist_ok=True)
@@ -80,7 +91,7 @@ def create_rand_mask(img_dir, label_dir, save_dir, num_per_img=2,
                      img_type='jpg',
                      save_type='png'):
     """
-
+    This function will generate num_per_img masks that are not intersect with boxes
     @param img_dir:
     @param label_dir:
     @param save_dir:
