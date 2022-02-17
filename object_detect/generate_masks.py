@@ -85,7 +85,18 @@ def create_mask_for_object(img_dir, label_dir, save_dir, expand_ratio_width=0, e
 
 
 
-def create_rand_mask(img_dir, label_dir, save_dir, num_per_img=2,
+import torch
+import os
+import numpy as np
+import math
+from tqdm import tqdm
+import random
+# image read libraries
+from PIL import Image
+import matplotlib.pyplot as plt
+import shutil
+
+def create_rand_mask(img_dir, label_dir, save_dir, save_txt_dir, num_per_img=2,
                      width_minmax=(0.05, 0.06),
                      hight_minmax=(0.05, 0.06),
                      img_type='jpg',
@@ -105,6 +116,7 @@ def create_rand_mask(img_dir, label_dir, save_dir, num_per_img=2,
     image_path = []
     label_path = []
     os.makedirs(save_dir, exist_ok=True)
+    os.makedirs(save_txt_dir, exist_ok=True)
 
     for root, dirs, files in os.walk(img_dir):
         for file in files:
@@ -144,6 +156,7 @@ def create_rand_mask(img_dir, label_dir, save_dir, num_per_img=2,
         with open(lb_p) as f:
             lines = f.read().splitlines()
 
+        result = []
         for _ in range(num_per_img):
             while True:
                 x_center = random.uniform(center_x_range[0], center_x_range[1])
@@ -184,9 +197,15 @@ def create_rand_mask(img_dir, label_dir, save_dir, num_per_img=2,
                     bot_right_x = min(math.floor(x_center * width + width_ran * width / 2), width)
                     bot_right_y = min(math.floor(y_center * hight + hight_ran * hight / 2), hight)
                     mask_img[top_left_y: bot_right_y, top_left_x: bot_right_x, :] = np.uint8(255)
+                    result.append("%d %.6f %.6f %.6f %.6f" % (0, x_center, y_center, width_ran, hight_ran))
                     break
 
         img_name = os.path.splitext(im_p.split(os.sep)[-1])[0]
+        result = "\n".join(result)
+        output_path = os.path.join(save_txt_dir, img_name+'.txt')
+        with open(output_path, "w+") as f:
+            f.write(result)
+
         save_path = os.path.join(save_dir, img_name + f'.{save_type}')
         mask_img = Image.fromarray(mask_img)
         mask_img.save(save_path)
