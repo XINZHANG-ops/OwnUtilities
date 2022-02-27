@@ -9,7 +9,6 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import shutil
 
-
 def create_mask_for_object(img_dir, label_dir, save_dir, expand_ratio_width=0, expand_ratio_hight=0, img_type='jpg',
                 save_type='png'):
     """
@@ -82,19 +81,6 @@ def create_mask_for_object(img_dir, label_dir, save_dir, expand_ratio_width=0, e
         mask_img = Image.fromarray(mask_img)
         mask_img.save(save_path)
 
-
-
-
-import torch
-import os
-import numpy as np
-import math
-from tqdm import tqdm
-import random
-# image read libraries
-from PIL import Image
-import matplotlib.pyplot as plt
-import shutil
 
 def create_rand_mask(img_dir, label_dir, save_dir, save_txt_dir, num_per_img=2,
                      width_minmax=(0.05, 0.06),
@@ -209,3 +195,81 @@ def create_rand_mask(img_dir, label_dir, save_dir, save_txt_dir, num_per_img=2,
         save_path = os.path.join(save_dir, img_name + f'.{save_type}')
         mask_img = Image.fromarray(mask_img)
         mask_img.save(save_path)
+
+
+
+def pick_make_bg_img(img_dir, label_dir, out_dir, target_label, max_width=0.1, max_height=0.1, max_obj_num=10):
+    """
+    This function will select wanted images as background image candidates
+    @param img_dir:
+    @param label_dir:
+    @param out_dir:
+    @param target_label: the image must have this label at least once
+
+    # note next 3 paramter exist since our Inpainting model is not perfect, we need to apply some restrictions on
+    # candidates
+    @param max_width: max width can exist in this image for objects, between 0 and 1
+    @param max_height: max height can exist in this image for objects, between 0 and 1
+    @param max_obj_num: max number of object can exit in this image
+    @return:
+    """
+    image_path = []
+    label_path = []
+    if os.path.exists(out_dir):
+        shutil.rmtree(out_dir)
+        os.makedirs(out_dir)
+    else:
+        os.makedirs(out_dir)
+
+    os.makedirs(os.path.join(out_dir, 'images'))
+    os.makedirs(os.path.join(out_dir, 'labels'))
+
+    for root, dirs, files in os.walk(img_dir):
+        for file in files:
+            if file.endswith(".jpg"):
+                if 'checkpoint' in file:
+                    pass
+                else:
+                    file_path = os.path.join(root, file)
+                    image_path.append(file_path)
+
+    for root, dirs, files in os.walk(label_dir):
+        for file in files:
+            if file.endswith(".txt"):
+                if 'checkpoint' in file:
+                    pass
+                else:
+                    file_path = os.path.join(root, file)
+                    label_path.append(file_path)
+
+    image_path = sorted(image_path)
+    label_path = sorted(label_path)
+    image_label_path_pair = list(zip(image_path, label_path))
+
+    epsilon = 1e-6
+    for im_p, lb_p in tqdm(image_label_path_pair):
+        im_name = os.path.splitext(im_p.split(os.sep)[-1])[0]
+        with open(lb_p) as f:
+            lines = f.read().splitlines()
+        all_targets = set()
+        w_max = 0
+        h_max = 0
+        obj_count = 0
+        for l in lines:
+            line_split = l.split(' ')
+            label = int(line_split[0])
+            all_targets.add(label)
+            x, y, w, h = tuple([float(i) + epsilon for i in line_split[1:5]])
+            if w > w_max:
+                w_max = w
+            if h > h_max:
+                h_max = h
+            obj_count += 1
+
+        if target_label in all_targets and w_max <= max_width and h_max <= max_height and obj_count<=max_obj_num:
+            img_out_path = os.path.join(out_dir, 'images', im_name + '_bg.jpg')
+            label_out_path = os.path.join(out_dir, 'labels', im_name + '_bg.txt')
+            shutil.copy2(im_p, img_out_path)
+            with open(label_out_path, mode='a'): pass
+
+
