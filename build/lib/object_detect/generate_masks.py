@@ -215,27 +215,10 @@ def pick_make_bg_img(img_dir, label_dir, out_dir, target_label, max_width=0.1, m
     """
     image_path = []
     label_path = []
-
-    if os.path.exists(out_dir):
-        pass
-    else:
-        os.makedirs(out_dir)
-
-    if os.path.exists(os.path.join(out_dir, 'images')):
-        pass
-    else:
-        os.makedirs(os.path.join(out_dir, 'images'))
-
-    if os.path.exists(os.path.join(out_dir, 'labels')):
-        pass
-    else:
-        os.makedirs(os.path.join(out_dir, 'labels'))
-
-    if os.path.exists(os.path.join(out_dir, 'empty_labels')):
-        pass
-    else:
-        os.makedirs(os.path.join(out_dir, 'empty_labels'))
-
+    os.makedirs(out_dir, exist_ok=True)
+    os.makedirs(os.path.join(out_dir, 'images'), exist_ok=True)
+    os.makedirs(os.path.join(out_dir, 'labels'), exist_ok=True)
+    os.makedirs(os.path.join(out_dir, 'empty_labels'), exist_ok=True)
 
     for root, dirs, files in os.walk(img_dir):
         for file in files:
