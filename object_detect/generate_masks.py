@@ -265,7 +265,7 @@ def pick_make_bg_img(img_dir, label_dir, out_dir, target_label, max_width=0.1, m
         if target_label in all_targets and w_max <= max_width and h_max <= max_height and obj_count<=max_obj_num:
             img_out_path = os.path.join(out_dir, 'images', im_name + '_bg.jpg')
             label_out_path = os.path.join(out_dir, 'labels', im_name + '_bg.txt')
-            empty_label_out_path = os.path.join(out_dir, 'labels', im_name + '_bg.txt')
+            empty_label_out_path = os.path.join(out_dir, 'empty_labels', im_name + '_bg.txt')
             shutil.copy2(lb_p, label_out_path)
             shutil.copy2(im_p, img_out_path)
             with open(empty_label_out_path, mode='a'): pass
