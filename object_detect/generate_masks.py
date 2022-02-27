@@ -215,15 +215,10 @@ def pick_make_bg_img(img_dir, label_dir, out_dir, target_label, max_width=0.1, m
     """
     image_path = []
     label_path = []
-    if os.path.exists(out_dir):
-        shutil.rmtree(out_dir)
-        os.makedirs(out_dir)
-    else:
-        os.makedirs(out_dir)
-
-    os.makedirs(os.path.join(out_dir, 'images'))
-    os.makedirs(os.path.join(out_dir, 'labels'))
-    os.makedirs(os.path.join(out_dir, 'empty_labels'))
+    os.makedirs(out_dir, exist_ok=True)
+    os.makedirs(os.path.join(out_dir, 'images'), exist_ok=True)
+    os.makedirs(os.path.join(out_dir, 'labels'), exist_ok=True)
+    os.makedirs(os.path.join(out_dir, 'empty_labels'), exist_ok=True)
 
     for root, dirs, files in os.walk(img_dir):
         for file in files:
