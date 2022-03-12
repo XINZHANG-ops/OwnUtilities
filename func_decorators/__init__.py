@@ -1,1 +1,1 @@
-from decorators import import func_timer
+from decorators import func_timer
