@@ -150,3 +150,20 @@ class Normalize:
         self.inverse_p = res.x[1]
 
         print(f'sigmoid_p: {self.sigmoid_p}, inverse_p: {self.inverse_p}')
+
+
+def demo():
+    import numpy as np
+    import seaborn as sns
+    mu, sigma = 3., 1.  # mean and standard deviation
+    s = np.random.lognormal(mu, sigma, 1000)
+    sns.displot(s)
+
+    dist_normalize = Normalize(70, 15)
+    dist_normalize.run_optmization(s, tol=1e-5, maxiter=10000, fast=True)
+    new_dist = dist_normalize.transform(s, dist_normalize.sigmoid_p, dist_normalize.inverse_p)
+    sns.displot(new_dist)
+
+    dist_normalize.run_optmization(s, tol=1e-5, maxiter=10000, fast=False)
+    new_dist = dist_normalize.transform(s, dist_normalize.sigmoid_p, dist_normalize.inverse_p)
+    sns.displot(new_dist)
