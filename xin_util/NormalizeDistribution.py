@@ -58,12 +58,13 @@ class Normalize:
     @staticmethod
     def inverse_transform(score, sig_p, inv_p):
         """
-        get resulting value back to original value with P values
+        get resulting values back to original value with P values
         @param score:
         @param sig_p:
         @param inv_p:
         @return:
         """
+        score = np.array(score)
         score = -score / 100
         term1 = (2 / (1 - score) - 1) ** (1 / inv_p)
         term2 = 2 / (1 + term1) - 1
@@ -167,3 +168,6 @@ def demo():
     dist_normalize.run_optmization(s, tol=1e-5, maxiter=10000, fast=False)
     new_dist = dist_normalize.transform(s, dist_normalize.sigmoid_p, dist_normalize.inverse_p)
     sns.displot(new_dist)
+
+    trans_back = dist_normalize.inverse_transform(new_dist, dist_normalize.sigmoid_p, dist_normalize.inverse_p)
+    sns.displot(trans_back)
