@@ -9,8 +9,16 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import shutil
 
-def create_mask_for_object(img_dir, label_dir, save_dir, expand_ratio_width=0, expand_ratio_hight=0, img_type='jpg',
-                save_type='png'):
+
+def create_mask_for_object(
+    img_dir,
+    label_dir,
+    save_dir,
+    expand_ratio_width=0,
+    expand_ratio_hight=0,
+    img_type='jpg',
+    save_type='png'
+):
     """
     This function will make where there is a box as mask
     @param img_dir:
@@ -75,18 +83,24 @@ def create_mask_for_object(img_dir, label_dir, save_dir, expand_ratio_width=0, e
             top_left_y = max(math.floor(y * hight - h * hight / 2), 0)
             bot_right_x = min(math.floor(x * width + w * width / 2), width)
             bot_right_y = min(math.floor(y * hight + h * hight / 2), hight)
-            mask_img[top_left_y: bot_right_y, top_left_x: bot_right_x, :] = np.uint8(255)
+            mask_img[top_left_y:bot_right_y, top_left_x:bot_right_x, :] = np.uint8(255)
         img_name = os.path.splitext(im_p.split(os.sep)[-1])[0]
         save_path = os.path.join(save_dir, img_name + f'.{save_type}')
         mask_img = Image.fromarray(mask_img)
         mask_img.save(save_path)
 
 
-def create_rand_mask(img_dir, label_dir, save_dir, save_txt_dir, num_per_img=2,
-                     width_minmax=(0.05, 0.06),
-                     hight_minmax=(0.05, 0.06),
-                     img_type='jpg',
-                     save_type='png'):
+def create_rand_mask(
+    img_dir,
+    label_dir,
+    save_dir,
+    save_txt_dir,
+    num_per_img=2,
+    width_minmax=(0.05, 0.06),
+    hight_minmax=(0.05, 0.06),
+    img_type='jpg',
+    save_type='png'
+):
     """
     This function will generate num_per_img masks that are not intersect with boxes
     @param img_dir:
@@ -182,13 +196,15 @@ def create_rand_mask(img_dir, label_dir, save_dir, save_txt_dir, num_per_img=2,
                     top_left_y = max(math.floor(y_center * hight - hight_ran * hight / 2), 0)
                     bot_right_x = min(math.floor(x_center * width + width_ran * width / 2), width)
                     bot_right_y = min(math.floor(y_center * hight + hight_ran * hight / 2), hight)
-                    mask_img[top_left_y: bot_right_y, top_left_x: bot_right_x, :] = np.uint8(255)
-                    result.append("%d %.6f %.6f %.6f %.6f" % (0, x_center, y_center, width_ran, hight_ran))
+                    mask_img[top_left_y:bot_right_y, top_left_x:bot_right_x, :] = np.uint8(255)
+                    result.append(
+                        "%d %.6f %.6f %.6f %.6f" % (0, x_center, y_center, width_ran, hight_ran)
+                    )
                     break
 
         img_name = os.path.splitext(im_p.split(os.sep)[-1])[0]
         result = "\n".join(result)
-        output_path = os.path.join(save_txt_dir, img_name+'.txt')
+        output_path = os.path.join(save_txt_dir, img_name + '.txt')
         with open(output_path, "w+") as f:
             f.write(result)
 
@@ -197,8 +213,9 @@ def create_rand_mask(img_dir, label_dir, save_dir, save_txt_dir, num_per_img=2,
         mask_img.save(save_path)
 
 
-
-def pick_make_bg_img(img_dir, label_dir, out_dir, target_label, max_width=0.1, max_height=0.1, max_obj_num=10):
+def pick_make_bg_img(
+    img_dir, label_dir, out_dir, target_label, max_width=0.1, max_height=0.1, max_obj_num=10
+):
     """
     This function will select wanted images as background image candidates
     @param img_dir:
@@ -235,7 +252,6 @@ def pick_make_bg_img(img_dir, label_dir, out_dir, target_label, max_width=0.1, m
         pass
     else:
         os.makedirs(os.path.join(out_dir, 'empty_labels'))
-
 
     for root, dirs, files in os.walk(img_dir):
         for file in files:
@@ -279,12 +295,11 @@ def pick_make_bg_img(img_dir, label_dir, out_dir, target_label, max_width=0.1, m
                 h_max = h
             obj_count += 1
 
-        if target_label in all_targets and w_max <= max_width and h_max <= max_height and obj_count<=max_obj_num:
+        if target_label in all_targets and w_max <= max_width and h_max <= max_height and obj_count <= max_obj_num:
             img_out_path = os.path.join(out_dir, 'images', im_name + '_bg.jpg')
             label_out_path = os.path.join(out_dir, 'labels', im_name + '_bg.txt')
             empty_label_out_path = os.path.join(out_dir, 'empty_labels', im_name + '_bg.txt')
             shutil.copy2(lb_p, label_out_path)
             shutil.copy2(im_p, img_out_path)
-            with open(empty_label_out_path, mode='a'): pass
-
-
+            with open(empty_label_out_path, mode='a'):
+                pass

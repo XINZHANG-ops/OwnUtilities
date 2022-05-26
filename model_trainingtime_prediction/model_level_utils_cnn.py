@@ -421,33 +421,34 @@ class cnn2d_model_train_data:
         for info_list in self.model_configs:
             model_configs.append(info_list.copy())
         for model_config_list in loop_fun(model_configs):
-            kwargs_list = model_config_list[0]
-            layer_orders = model_config_list[1]
-            input_shape = model_config_list[2]
-            model = gen_cnn2d.build_cnn2d_model(kwargs_list, layer_orders)
-            batch_size = sample(self.batch_sizes, 1)[0]
-            batch_size_data_batch = []
-            batch_size_data_epoch = []
-            out_shape = model.get_config()['layers'][-1]['config']['units']
-            x = np.ones((batch_size, *input_shape), dtype=np.float32)
-            y = np.ones((batch_size, out_shape), dtype=np.float32)
-            for _ in range(self.trials):
-                time_callback = TimeHistory()
-                model.fit(
-                    x,
-                    y,
-                    epochs=self.epochs,
-                    batch_size=batch_size,
-                    callbacks=[time_callback],
-                    verbose=False
-                )
-                times_batch = np.array(time_callback.batch_times) * 1000
-                times_epoch = np.array(time_callback.epoch_times) * 1000
-                batch_size_data_batch.extend(times_batch)
-                batch_size_data_epoch.extend(times_epoch)
-
+            with tf.compat.v1.Session() as sess:
+                kwargs_list = model_config_list[0]
+                layer_orders = model_config_list[1]
+                input_shape = model_config_list[2]
+                model = gen_cnn2d.build_cnn2d_model(kwargs_list, layer_orders)
+                batch_size = sample(self.batch_sizes, 1)[0]
+                batch_size_data_batch = []
+                batch_size_data_epoch = []
+                out_shape = model.get_config()['layers'][-1]['config']['units']
+                x = np.ones((batch_size, *input_shape), dtype=np.float32)
+                y = np.ones((batch_size, out_shape), dtype=np.float32)
+                for _ in range(self.trials):
+                    time_callback = TimeHistory()
+                    model.fit(
+                        x,
+                        y,
+                        epochs=self.epochs,
+                        batch_size=batch_size,
+                        callbacks=[time_callback],
+                        verbose=False
+                    )
+                    times_batch = np.array(time_callback.batch_times) * 1000
+                    times_epoch = np.array(time_callback.epoch_times) * 1000
+                    batch_size_data_batch.extend(times_batch)
+                    batch_size_data_epoch.extend(times_epoch)
+            sess.close()
             batch_times_truncated = batch_size_data_batch[self.truncate_from:]
-            epoch_times_trancuted = batch_size_data_epoch[self.truncate_from:]
+            epoch_times_truncated = batch_size_data_epoch[self.truncate_from:]
             recovered_time = [
                 np.median(batch_times_truncated)
             ] * self.truncate_from + batch_times_truncated
@@ -455,7 +456,7 @@ class cnn2d_model_train_data:
             model_config_list.append({
                 'batch_size': batch_size,
                 'batch_time': np.median(batch_times_truncated),
-                'epoch_time': np.median(epoch_times_trancuted),
+                'epoch_time': np.median(epoch_times_truncated),
                 'setup_time': np.sum(batch_size_data_batch) - sum(recovered_time),
                 'input_dim': input_shape
             })

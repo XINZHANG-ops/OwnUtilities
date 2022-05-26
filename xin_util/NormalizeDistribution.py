@@ -31,7 +31,7 @@ class Normalize:
         @param p:
         @return:
         """
-        return 1 + -1 / (0.5 + 0.5 * x ** (p))
+        return 1 + -1 / (0.5 + 0.5 * x**(p))
 
     @staticmethod
     def modified_sigmoid(x, p=0.1):
@@ -53,7 +53,7 @@ class Normalize:
         @param inv_p:
         @return:
         """
-        return -100*Normalize.inverse_mapping(Normalize.modified_sigmoid(values, sig_p), inv_p)
+        return -100 * Normalize.inverse_mapping(Normalize.modified_sigmoid(values, sig_p), inv_p)
 
     @staticmethod
     def inverse_transform(score, sig_p, inv_p):
@@ -66,9 +66,9 @@ class Normalize:
         """
         score = np.array(score)
         score = -score / 100
-        term1 = (2 / (1 - score) - 1) ** (1 / inv_p)
+        term1 = (2 / (1 - score) - 1)**(1 / inv_p)
         term2 = 2 / (1 + term1) - 1
-        return - np.log(term2) / sig_p
+        return -np.log(term2) / sig_p
 
     @staticmethod
     def get_density_values(dist):
@@ -88,6 +88,7 @@ class Normalize:
     def run_optmization(self, values, tol=1e-5, maxiter=10000, fast=False):
         values = np.array(values)
         if fast:
+
             def objective_function(x):
                 # step counter
                 count_step.add_one()
@@ -111,6 +112,7 @@ class Normalize:
 
         else:
             normal_density = Normalize.get_density_values(self.N)
+
             def objective_function(x):
                 # step counter
                 count_step.add_one()
@@ -126,7 +128,7 @@ class Normalize:
 
                 # get distance loss between two vectors
                 M = score_density - normal_density
-                normal_loss = np.sqrt(np.sum(M ** 2))
+                normal_loss = np.sqrt(np.sum(M**2))
 
                 # get std loss
                 std_loss = abs(np.std(scores) - self.target_std)
@@ -144,8 +146,14 @@ class Normalize:
         bounds = [(0, 1), (0, 1)]
 
         count_step = VerboseCallback()
-        res = minimize(objective_function, initial_value, method='Powell', tol=tol, options={'maxiter': maxiter},
-                       bounds=bounds)
+        res = minimize(
+            objective_function,
+            initial_value,
+            method='Powell',
+            tol=tol,
+            options={'maxiter': maxiter},
+            bounds=bounds
+        )
 
         self.sigmoid_p = res.x[0]
         self.inverse_p = res.x[1]
@@ -169,5 +177,7 @@ def demo():
     new_dist = dist_normalize.transform(s, dist_normalize.sigmoid_p, dist_normalize.inverse_p)
     sns.displot(new_dist)
 
-    trans_back = dist_normalize.inverse_transform(new_dist, dist_normalize.sigmoid_p, dist_normalize.inverse_p)
+    trans_back = dist_normalize.inverse_transform(
+        new_dist, dist_normalize.sigmoid_p, dist_normalize.inverse_p
+    )
     sns.displot(trans_back)
