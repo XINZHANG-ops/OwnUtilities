@@ -19,6 +19,7 @@ import tensorflow as tf
 from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2_as_graph
 from sklearn.preprocessing import OneHotEncoder
 from collections.abc import Iterable
+import tensorflow.keras.applications as tka
 
 activation_fcts = [
     'relu', "sigmoid", "softmax", "softplus", "softsign", "tanh", "selu", "elu", "exponential"
@@ -1229,6 +1230,94 @@ class convert_cnn2d_data:
             return layer_data
 
 
+class ClassicModelTrainData:
+    def __init__(
+        self,
+        batch_sizes=None,
+        optimizers=None,
+        losses=None,
+        epochs=None,
+        truncate_from=None,
+        trials=None
+    ):
+        self.batch_sizes = batch_sizes if batch_sizes is not None else [2**i for i in range(1, 9)]
+        self.epochs = epochs if epochs is not None else 10
+        self.truncate_from = truncate_from if truncate_from is not None else 2
+        self.trials = trials if trials is not None else 5
+        self.optimizers = optimizers if optimizers is not None else [
+            "sgd", "rmsprop", "adam", "adadelta", "adagrad", "adamax", "nadam", "ftrl"
+        ]
+        self.losses = losses if losses is not None else [
+            "mae", "mape", "mse", "msle", "poisson", "categorical_crossentropy"
+        ]
+
+    @staticmethod
+    def nothing(x, **kwargs):
+        return x
+
+    @staticmethod
+    def get_model(model_name, classes):
+        cls_model_method = getattr(tka, model_name)
+        model = cls_model_method(classes=classes)
+        return model
+
+    def get_train_data(self, model_name, output_size=1000, progress=True):
+        model_data = []
+        if progress:
+            loop_fun = tqdm
+        else:
+            loop_fun = classic_model_train_data.nothing
+
+        for batch_size in loop_fun(self.batch_sizes):
+            for optimizer in loop_fun(self.optimizers, leave=False):
+                for loss in loop_fun(self.losses, leave=False):
+                    with tf.compat.v1.Session() as sess:
+                        gpu_devices = tf.config.experimental.list_physical_devices("GPU")
+                        for device in gpu_devices:
+                            tf.config.experimental.set_memory_growth(device, True)
+
+                        model = classic_model_train_data.get_model(model_name, output_size)
+                        model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
+                        input_shape = model.get_config(
+                        )['layers'][0]['config']['batch_input_shape'][1:]
+                        batch_size_data_batch = []
+                        batch_size_data_epoch = []
+                        x = np.ones((batch_size, *input_shape), dtype=np.float32)
+                        y = np.ones((batch_size, output_size), dtype=np.float32)
+                        for _ in range(self.trials):
+                            time_callback = TimeHistory()
+                            model.fit(
+                                x,
+                                y,
+                                epochs=self.epochs,
+                                batch_size=batch_size,
+                                callbacks=[time_callback],
+                                verbose=False
+                            )
+                            times_batch = np.array(time_callback.batch_times) * 1000
+                            times_epoch = np.array(time_callback.epoch_times) * 1000
+                            batch_size_data_batch.extend(times_batch)
+                            batch_size_data_epoch.extend(times_epoch)
+                    sess.close()
+                    batch_times_truncated = batch_size_data_batch[self.truncate_from:]
+                    epoch_times_truncated = batch_size_data_epoch[self.truncate_from:]
+                    recovered_time = [
+                        np.median(batch_times_truncated)
+                    ] * self.truncate_from + batch_times_truncated
+
+                    data_point = {
+                        'batch_size': batch_size,
+                        'optimizer': optimizer,
+                        'loss': loss,
+                        'batch_time': np.median(batch_times_truncated),
+                        'epoch_time': np.median(epoch_times_truncated),
+                        'setup_time': np.sum(batch_size_data_batch) - sum(recovered_time),
+                        'input_dim': input_shape
+                    }
+                    model_data.append(data_point)
+        return model_data
+
+
 def demo_depreciated():
     save_step = 100
     data_points = 10000
@@ -1547,3 +1636,16 @@ def demo_new():
     AlexNet_data = ccd.convert_model_keras(
         AlexNet, (256, 28, 28), 'sgd', 128, layer_num_upper=105, data_type='FLOPs', scaler=scaler
     )
+
+
+def demo_classic_models():
+    """
+    check here for all valid models: https://www.tensorflow.org/api_docs/python/tf/keras/applications
+    :return:
+    """
+    cmtd = ClassicModelTrainData(
+        batch_sizes=[2, 4],
+        optimizers=["sgd", "rmsprop", "adam"],
+        losses=["mse", "msle", "poisson", "categorical_crossentropy"]
+    )
+    model_data = cmtd.get_train_data('VGG16', output_size=1000, progress=True)
