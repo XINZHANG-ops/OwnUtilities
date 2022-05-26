@@ -1266,7 +1266,7 @@ class ClassicModelTrainData:
         if progress:
             loop_fun = tqdm
         else:
-            loop_fun = classic_model_train_data.nothing
+            loop_fun = ClassicModelTrainData.nothing
 
         for batch_size in loop_fun(self.batch_sizes):
             for optimizer in loop_fun(self.optimizers, leave=False):
@@ -1276,7 +1276,7 @@ class ClassicModelTrainData:
                         for device in gpu_devices:
                             tf.config.experimental.set_memory_growth(device, True)
 
-                        model = classic_model_train_data.get_model(model_name, output_size)
+                        model = ClassicModelTrainData.get_model(model_name, output_size)
                         model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
                         input_shape = model.get_config(
                         )['layers'][0]['config']['batch_input_shape'][1:]
