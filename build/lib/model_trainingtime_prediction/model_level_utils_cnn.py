@@ -7,7 +7,7 @@
 import time
 import tensorflow.keras as keras
 import pandas as pd
-from tqdm.auto import tqdm
+from tqdm import tqdm
 import numpy as np
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Conv2D, Flatten, MaxPooling2D, Dropout
