@@ -10,7 +10,7 @@ Simple self-use great functions
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install utilities.
 
 ```bash
-pip install -i https://test.pypi.org/simple/ xin-util
+pip install xin-util
 ```
 
 ## Usage
